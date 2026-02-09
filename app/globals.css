@@ -1,0 +1,1106 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.attachment-item:hover {
+  background-color: #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+.sticker-picker {
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Add these styles to your CSS */
+.call-message {
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.call-message:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure proper contrast for both themes */
+.call-message.own {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.call-message.other {
+  background: #f9fafb;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+/* Search highlight styles */
+mark {
+  background-color: #fef08a;
+  padding: 0.1em 0.2em;
+  border-radius: 0.25em;
+}
+
+/* Rich Text Styling */
+.rich-text-content {
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.rich-text-content strong {
+  font-weight: 600;
+}
+
+.rich-text-content em {
+  font-style: italic;
+}
+
+.rich-text-content u {
+  text-decoration: underline;
+}
+
+.rich-text-content del {
+  text-decoration: line-through;
+}
+
+.rich-text-content code.inline-code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  color: #1f2937;
+}
+
+/* Voice Message Styling */
+/* Add to your CSS */
+.audio-message audio {
+  height: 40px;
+  border-radius: 20px;
+  background: #f1f3f4;
+}
+
+.audio-message audio::-webkit-media-controls-panel {
+  background: #f1f3f4;
+}
+
+.audio-message audio::-webkit-media-controls-current-time-display,
+.audio-message audio::-webkit-media-controls-time-remaining-display {
+  color: #333;
+  font-size: 12px;
+}
+
+/* Add to your global CSS */
+.highlight-pulse {
+  animation: highlightPulse 2s ease-in-out;
+}
+
+@keyframes highlightPulse {
+  0% { background-color: rgba(255, 255, 0, 0.3); }
+  50% { background-color: rgba(255, 255, 0, 0.6); }
+  100% { background-color: rgba(255, 255, 0, 0.3); }
+}
+
+/* Ensure proper z-index for modals */
+.fixed {
+  z-index: 9999;
+}
+
+
+.items-start.gray .fixed{
+    position: absolute;
+    content: "";
+    top: 0px !important;
+    left: 30px !important;
+}
+
+
+.items-start.blue .fixed{
+    /* position: absolute; */
+    content: "";
+    top: 0px !important;
+    right: 50px !important;
+}
+  
+
+
+.rich-text-preview {
+  line-height: 1.5;
+}
+
+.rich-text-preview strong {
+  font-weight: 600;
+  color: #374151;
+}
+
+.rich-text-preview em {
+  font-style: italic;
+  color: #374151;
+}
+
+.rich-text-preview u {
+  text-decoration: underline;
+  color: #374151;
+}
+
+.rich-text-preview del {
+  color: #6b7280;
+}
+
+.rich-text-preview code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #dc2626;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.rich-text-preview a {
+  color: #3b82f6;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+.rich-text-preview a:hover {
+  color: #1d4ed8;
+}
+
+
+.z-\[9999\] {
+  z-index: 9999 !important;
+}
+
+/* Rich text preview styles */
+.prose strong {
+  font-weight: bold;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose u {
+  text-decoration: underline;
+}
+
+.prose del {
+  text-decoration: line-through;
+}
+
+.inline-code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+/* Animation for recording */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+
+
+/* Add this to your global CSS or as a style tag */
+.rich-text-link {
+  text-decoration: underline !important;
+}
+
+.rich-text-link:hover {
+  opacity: 0.8;
+}
+
+/* For own messages (blue background) */
+.bg-blue-500 .rich-text-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* For others messages (gray background) */
+.bg-gray-100 .rich-text-link {
+  color: #1e40af !important; /* blue-800 */
+}
+
+/* AI Suggestions Styles */
+.ai-suggestions {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.ai-suggestion-button {
+  transition: all 0.2s ease;
+  transform: scale(1);
+}
+
+.ai-suggestion-button:hover {
+  transform: scale(1.05);
+}
+
+.ai-suggestion-button:active {
+  transform: scale(0.95);
+}
+
+.ai-suggestions-loading {
+  opacity: 0.7;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse animation for loading */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.highlighted-message {
+  animation: highlight-pulse 2s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(254, 240, 138, 0.5);
+    box-shadow: 0 0 0 0 rgba(254, 240, 138, 0.7);
+  }
+  50% {
+    background-color: rgba(254, 240, 138, 0.8);
+    box-shadow: 0 0 0 10px rgba(254, 240, 138, 0);
+  }
+  100% {
+    background-color: rgba(254, 240, 138, 0.5);
+    box-shadow: 0 0 0 0 rgba(254, 240, 138, 0);
+  }
+}
+
+.reply-preview {
+  transition: all 0.2s ease;
+}
+
+.reply-preview:hover {
+  transform: translateX(2px);
+}
+
+/* Smooth scroll behavior */
+.message-list-container {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent layout shifts */
+.message-container {
+  contain: layout style;
+}
+
+/* Loading indicator position */
+.loading-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Add to your global CSS or component CSS */
+.message-container {
+  scroll-behavior: smooth;
+}
+
+/* Styling for the infinite scroll area */
+.messages-area {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100%;
+}
+
+/* Sticky dates for better UX */
+.date-group {
+  position: relative;
+}
+
+.date-group:first-child .date-separator {
+  margin-top: auto;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ========== MESSAGE MENU STYLES ========== */
+/* Container for the message menu */
+.message-menu-container {
+  position: fixed !important;
+  z-index: 999999 !important;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+  min-width: 180px;
+  max-width: 220px;
+  animation: menuSlideIn 0.15s ease-out;
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Animation for menu appearance */
+@keyframes menuSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Backdrop for closing menu when clicking outside */
+.message-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999998;
+  background: transparent;
+  cursor: default;
+}
+
+/* Message menu button (3-dot button) */
+.message-menu-button {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  position: relative;
+  z-index: 20;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.message-container:hover .message-menu-button {
+  opacity: 1 !important;
+}
+
+.message-menu-button:hover {
+  background: rgba(229, 231, 235, 0.9);
+}
+
+/* Message container styles */
+.message-container {
+  position: relative;
+  z-index: 1;
+}
+
+.message-container:hover {
+  z-index: 10;
+}
+
+/* Prevent body scroll when menu is open */
+body.menu-open {
+  overflow: hidden;
+}
+
+/* Menu item styles */
+.message-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  text-align: left;
+  color: #374151;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.message-menu-item:hover {
+  background-color: #f3f4f6;
+}
+
+.message-menu-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Danger items (delete actions) */
+.message-menu-item.danger {
+  color: #dc2626;
+}
+
+.message-menu-item.danger:hover {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Divider in menu */
+.message-menu-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 4px 0;
+}
+
+/* Ensure menu is not clipped by parent containers */
+* {
+  box-sizing: border-box;
+}
+
+/* For better positioning in message bubbles */
+.message-bubble {
+  position: relative;
+}
+
+/* Prevent any clipping */
+.overflow-visible {
+  overflow: visible !important;
+}
+
+/* Make sure message area doesn't clip menus */
+.messages-area {
+  overflow-anchor: none;
+}
+
+
+/* Voice Call Animations */
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.1); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes sound-wave {
+  0%, 100% { height: 0.5rem; }
+  50% { height: 1.5rem; }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-sound-wave {
+  animation: sound-wave 1s ease-in-out infinite;
+}
+
+/* Glass morphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient borders */
+.gradient-border {
+  position: relative;
+  border-radius: 1rem;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Button hover effects */
+.call-button-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.call-button-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Status indicators */
+.status-indicator {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.status-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-connected::before { background-color: #10b981; }
+.status-connecting::before { background-color: #f59e0b; }
+.status-disconnected::before { background-color: #ef4444; }
+
+
+/* Video Call Specific Animations */
+@keyframes video-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes connection-wave {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes button-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+  50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+}
+
+@keyframes quality-bar {
+  0%, 100% { height: 0.25rem; }
+  50% { height: 1rem; }
+}
+
+/* Component Styles */
+.animate-video-pulse {
+  animation: video-pulse 3s ease-in-out infinite;
+}
+
+.animate-connection-wave {
+  animation: connection-wave 2s linear infinite;
+}
+
+.animate-status-pulse {
+  animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+.animate-button-glow {
+  animation: button-glow 2s ease-in-out infinite;
+}
+
+.animate-quality-bar {
+  animation: quality-bar 1s ease-in-out infinite;
+}
+
+/* Glass Effect Variants */
+.glass-effect-light {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-effect-dark {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Video Container Effects */
+.video-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(139, 92, 246, 0.1) 50%, 
+    rgba(236, 72, 153, 0.1) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Button Hover Effects */
+.call-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.call-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%);
+  transform-origin: 50% 50%;
+}
+
+.call-button:focus:not(:active)::after {
+  animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20);
+    opacity: 0;
+  }
+}
+
+/* Status Indicator */
+.status-indicator-video {
+  position: relative;
+}
+
+.status-indicator-video::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .video-controls {
+    padding: 1rem;
+  }
+  
+  .video-controls button {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+  
+  .video-preview {
+    height: 12rem;
+  }
+}
+
+/* Loading Animation */
+.loading-wave {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 3rem;
+}
+
+.loading-wave span {
+  width: 0.25rem;
+  height: 1rem;
+  margin: 0 0.125rem;
+  background: linear-gradient(to top, #3b82f6, #8b5cf6);
+  border-radius: 0.25rem;
+  animation: loading-wave-animation 1s ease-in-out infinite;
+}
+
+.loading-wave span:nth-child(2) { animation-delay: 0.1s; }
+.loading-wave span:nth-child(3) { animation-delay: 0.2s; }
+.loading-wave span:nth-child(4) { animation-delay: 0.3s; }
+.loading-wave span:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes loading-wave-animation {
+  0%, 100% { height: 1rem; }
+  50% { height: 2.5rem; }
+}
+
+
+/* Prevent closing edit popup when clicking inside */
+.edit-message-ui {
+  position: relative;
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+}
+
+/* When editing is active, disable the message menu close behavior */
+.message-container.editing-active .message-menu-container {
+  display: none !important;
+}
+
+/* Make sure edit UI is above everything */
+.edit-message-ui textarea,
+.edit-message-ui button,
+.edit-message-ui div {
+  pointer-events: auto !important;
+}
+
+/* Prevent any parent clicks from affecting edit UI */
+.message-container:has(.edit-message-ui) {
+  pointer-events: auto !important;
+}
+
+.message-container:has(.edit-message-ui) .message-menu-button {
+  display: none !important;
+}
+
+/* Popup Notification Panel Adjustments */
+
+/* Popup Chat Window Styles */
+.mini-chat-popup {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  resize: none;
+  user-select: none;
+}
+
+.mini-chat-popup:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.mini-chat-popup.dragging {
+  opacity: 0.9;
+  cursor: grabbing;
+}
+
+.mini-chat-popup.resizing {
+  opacity: 0.9;
+  transition: none;
+}
+
+/* Cascade animation */
+@keyframes popupCascade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mini-chat-popup {
+  animation: popupCascade 0.3s ease-out forwards;
+}
+
+/* Z-index layering */
+.mini-chat-popup {
+  z-index: 1002;
+}
+
+/* Draggable header */
+.draggable-header {
+  cursor: move;
+  user-select: none;
+}
+
+.draggable-header:active {
+  cursor: grabbing;
+}
+
+/* Prevent dragging on input elements */
+.no-drag {
+  cursor: default;
+  user-select: auto;
+}
+
+.no-drag * {
+  user-select: auto;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  background: transparent;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover {
+  opacity: 1;
+}
+
+.mini-chat-popup:hover .resize-handle {
+  opacity: 0.5;
+}
+
+.resize-handle.right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resize-handle.bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resize-handle.bottom-right {
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  border-bottom-right-radius: 12px;
+}
+
+/* Message input */
+.message-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Scrollbar styling */
+.mini-chat-popup ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mini-chat-popup ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.mini-chat-popup ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.mini-chat-popup ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Message highlight for search */
+.highlight-pulse {
+  animation: highlightPulse 2s ease;
+}
+
+@keyframes highlightPulse {
+  0% { background-color: rgba(255, 255, 0, 0.3); }
+  100% { background-color: transparent; }
+}
+
+/* Responsive popup */
+@media (max-width: 768px) {
+  .mini-chat-popup {
+    width: 90vw !important;
+    height: 70vh !important;
+    max-width: 400px !important;
+    left: 5vw !important;
+    right: 5vw !important;
+    top: 15vh !important;
+    position: fixed !important;
+  }
+}
+
+/* Voice recorder dialog */
+.voice-recorder-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  min-width: 300px;
+}
+
+/* Rich text editor */
+.rich-text-editor-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998;
+  backdrop-filter: blur(4px);
+}
+
+/* Typing indicator */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: #6b7280;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  color: #666;
+  font-style: italic;
+}
+
+.typing-dots {
+  display: inline-flex;
+  margin-right: 4px;
+}
+
+.typing-dots span {
+  animation: typing 1.4s infinite;
+  margin: 0 1px;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
