@@ -27,7 +27,7 @@ export default function ConversationSummary({ chat, currentUserId }) {
       }
     } catch (error) {
       console.error("Error generating summary:", error);
-      errorToast("Failed to generate summary", "error");
+      errorToast("Failed to generate summary", error);
     } finally {
       setLoading(false);
     }

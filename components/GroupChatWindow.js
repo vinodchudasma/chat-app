@@ -6,6 +6,8 @@ import { groupAPI } from "../lib/api";
 import LoadingSpinner from "./LoadingSpinner";
 
 export default function GroupChatWindow({ chat, socket, isConnected }) {
+  console.log(chat, "chat33");
+
   const { userId } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");

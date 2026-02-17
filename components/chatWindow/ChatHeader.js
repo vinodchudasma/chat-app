@@ -255,7 +255,15 @@ export default function ChatHeader({
             <div
               className={`w-10 h-10 ${chat?.type === "group" ? "bg-gradient-to-br from-green-500 to-blue-600" : "bg-gradient-to-br from-blue-500 to-purple-600"} rounded-full flex items-center justify-center text-white font-semibold`}
             >
-              {chatName.charAt(0).toUpperCase()}
+              {chat?.avatar ? (
+                <img
+                  src={chat.avatar}
+                  alt={chatName}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span>{chatName.charAt(0).toUpperCase()}</span>
+              )}
             </div>
             {chat?.type === "private" && (
               <div

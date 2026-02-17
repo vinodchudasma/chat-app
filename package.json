@@ -9,7 +9,8 @@
     "fix-deps": "npm install --legacy-peer-deps"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.0.0",  
+    "@clerk/nextjs": "^5.0.0",
+    "@svgr/webpack": "^8.1.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.12.2",
     "firebase": "^12.3.0",

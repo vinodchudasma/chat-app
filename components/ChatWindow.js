@@ -8,17 +8,15 @@ import {
   callAPI,
   semanticSearchAPI,
   moderationAPI,
+  aiAPI,
 } from "../lib/api";
 import GroupManager from "./GroupManager";
 import { successToast, errorToast } from "./toast";
-import { aiAPI } from "../lib/api";
 import { memo } from "react";
 
 // Import new components
 import ChatHeader from "./chatWindow/ChatHeader";
 import MessageList from "./chatWindow/MessageList";
-import MessageInput from "./chatWindow/MessageInput";
-import SearchBar from "./chatWindow/SearchBar";
 import DeleteDialog from "./chatWindow/DeleteDialog";
 import ForwardDialog from "./chatWindow/ForwardDialog";
 import ReplyPreview from "./chatWindow/ReplyPreview";
@@ -26,17 +24,12 @@ import SelectedFilesPreview from "./chatWindow/SelectedFilesPreview";
 import VoiceRecorder from "./chatWindow/VoiceRecorder";
 import RichTextEditor from "./chatWindow/RichTextEditor";
 import ModerationWarning from "./chatWindow/ModerationWarning";
-import ConversationSummary from "./chatWindow/ConversationSummary";
 import SemanticSearchBar from "./chatWindow/SemanticSearchBar";
 import UserProfileModal from "./UserProfileModal";
 import { ringtoneService } from "../lib/ringtone-service";
-import MentionSuggestions from "./chatWindow/MentionSuggestions";
-import MentionedUser from "./chatWindow/MentionedUser";
-import {
-  parseMentions,
-  extractMentionUsernames,
-  formatMessageWithMentions,
-} from "../utils/mentionParser";
+
+import MessageInput from "./chatWindow/MessageInput";
+import { stickers } from "@/utils/comman";
 
 export default function ChatWindow({
   chat,
@@ -57,6 +50,7 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showStickerMenu, setShowStickerMenu] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -78,7 +72,6 @@ export default function ChatWindow({
   const [incomingCall, setIncomingCall] = useState(null);
   const [ringingAudio, setRingingAudio] = useState(null);
   const [isSearchingMode, setIsSearchingMode] = useState(false);
-  const [isSearchCancelled, setIsSearchCancelled] = useState(false);
 
   // Search related state
   const [searchResults, setSearchResults] = useState([]);
@@ -99,7 +92,6 @@ export default function ChatWindow({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
   const [richText, setRichText] = useState("");
-  const [voiceMessages, setVoiceMessages] = useState(new Map());
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   // Moderation state
@@ -151,6 +143,8 @@ export default function ChatWindow({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState(null);
+  // Add this with your other useState declarations
+  const [translateTo, setTranslateTo] = useState(null);
 
   const messagesContainerRef = useRef(null);
 
@@ -186,7 +180,7 @@ export default function ChatWindow({
         // Add "@all" option to members list
         const members = response.data.members;
         const allOption = {
-          id: "all",
+          _id: "all",
           name: "@all",
           username: "all",
           first_name: "all",
@@ -211,7 +205,7 @@ export default function ChatWindow({
       // Always show @all as first option if query starts with "@a"
       if (query.toLowerCase().startsWith("@a")) {
         const allOption = {
-          id: "all",
+          _id: "all",
           name: "@all",
           username: "all",
           first_name: "all",
@@ -292,7 +286,7 @@ export default function ChatWindow({
 
           // Add @all option if relevant
           const allOption = {
-            id: "all",
+            _id: "all",
             name: "@all",
             username: "all",
             first_name: "all",
@@ -429,7 +423,7 @@ export default function ChatWindow({
           msg._id ||
           (msg.message_type === "call"
             ? `call_${msg.call_id}`
-            : `msg_${msg.created_at}_${msg.sender_id}_${msg.message?.substring(0, 10)}`);
+            : `msg_${msg.created_at}_${msg.sender_id?._id}_${msg.message?.substring(0, 10)}`);
 
         if (messageId) {
           processedMessageIds.current.add(`msg-${messageId}`);
@@ -568,15 +562,32 @@ export default function ChatWindow({
     }
   }, []);
 
-  // Core chat validation
+  // Helper function to get chat ID safely
+  const getChatId = useCallback((chatObj) => {
+    if (!chatObj) return null;
+    return (
+      chatObj._id ||
+      chatObj.id ||
+      chatObj.chat_id ||
+      chatObj.groupId ||
+      chatObj.group_id
+    );
+  }, []);
+
+  // Core chat validation - ensure _id is always present
   useEffect(() => {
     if (chat && Object.keys(chat).length > 0) {
-      validatedChatRef.current = chat;
+      // Ensure the chat object always has _id property
+      const chatWithId = {
+        ...chat,
+        _id: getChatId(chat),
+      };
+      validatedChatRef.current = chatWithId;
     } else {
       console.error("Invalid chat object received:", chat);
       validatedChatRef.current = null;
     }
-  }, [chat]);
+  }, [chat, getChatId]);
 
   useEffect(() => {
     if (incomingCall && !ringingAudio) {
@@ -705,7 +716,7 @@ export default function ChatWindow({
       }
 
       // Skip own messages
-      if (parseInt(message.sender_id) === parseInt(currentUserId)) {
+      if (message.sender_id?._id === currentUserId) {
         return;
       }
 
@@ -808,13 +819,10 @@ export default function ChatWindow({
       // Check if message is for current group
       if (
         validatedChatRef.current?.type === "group" &&
-        parseInt(validatedChatRef.current._id) === parseInt(message.group_id)
+        validatedChatRef.current._id === message.group_id
       ) {
         // Skip if it's from current user AND skip_self is true
-        if (
-          message.skip_self &&
-          parseInt(message.sender_id) === parseInt(currentUserId)
-        ) {
+        if (message.skip_self && message.sender_id?._id === currentUserId) {
           return;
         }
 
@@ -847,9 +855,7 @@ export default function ChatWindow({
 
         setMessages((prev) => {
           // For code messages, we need to be more careful about matching
-          if (
-            parseInt(transformedMessage.sender_id) === parseInt(currentUserId)
-          ) {
+          if (transformedMessage.sender_id?._id === currentUserId) {
             // For our own messages, look for temp message to replace
 
             // First try: Match by tempId (if we have one)
@@ -875,7 +881,7 @@ export default function ChatWindow({
                 (msg) =>
                   msg.message_type === "code" &&
                   msg.message === transformedMessage.message &&
-                  msg.sender_id === currentUserId &&
+                  msg.sender_id?._id === currentUserId &&
                   (!msg._id || msg._id.toString().startsWith("temp-")),
               );
 
@@ -894,7 +900,7 @@ export default function ChatWindow({
             const existingTempIndex = prev.findIndex(
               (msg) =>
                 (!msg._id || msg._id.toString().startsWith("temp-")) &&
-                msg.sender_id === currentUserId &&
+                msg.sender_id?._id === currentUserId &&
                 msg.message_type === transformedMessage.message_type &&
                 Math.abs(
                   new Date(msg.created_at) -
@@ -938,27 +944,25 @@ export default function ChatWindow({
       // Determine if it's for current chat
       const isForCurrentChat =
         validatedChatRef.current?.type === "group"
-          ? parseInt(message.group_id) ===
-            parseInt(validatedChatRef.current._id)
-          : parseInt(message.chat_id) ===
-            parseInt(validatedChatRef.current?._id);
+          ? message.group_id === validatedChatRef.current._id
+          : message.chat_id === validatedChatRef.current?._id;
 
       if (!isForCurrentChat) return;
 
       // Skip if already processed
-      if (message._id && processedMessageIds.has(`audio-${message._id}`)) {
-        return;
-      }
-
       if (
-        message.skip_self &&
-        parseInt(message.sender_id) === parseInt(currentUserId)
+        message._id &&
+        processedMessageIds.current.has(`audio-${message._id}`)
       ) {
         return;
       }
 
+      if (message.skip_self && message?.sender_id?._id === currentUserId) {
+        return;
+      }
+
       // Mark as processed
-      if (message._id) processedMessageIds.add(`audio-${message._id}`);
+      if (message._id) processedMessageIds.current.add(`audio-${message._id}`);
 
       const transformedMessage = transformFileMessageForDisplay(message);
       handleNewMessage(transformedMessage);
@@ -1075,7 +1079,7 @@ export default function ChatWindow({
     };
 
     const handleGroupMessageEdited = (data) => {
-      if (parseInt(validatedChatRef.current._id) === parseInt(data.group_id)) {
+      if (validatedChatRef.current._id === data.group_id) {
         setMessages((prev) =>
           prev.map((msg) =>
             msg._id === data.message_id
@@ -1135,7 +1139,7 @@ export default function ChatWindow({
       if (data.chat_id === validatedChatRef.current?._id) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg._id === data.message_id && msg.sender_id === currentUserId
+            msg._id === data.message_id && msg.sender_id?._id === currentUserId
               ? {
                   ...msg,
                   is_read: true,
@@ -1148,14 +1152,11 @@ export default function ChatWindow({
     };
 
     const handleTypingPrivate = (data) => {
-      console.log("🔔 Private typing event received:", data);
-
       if (
         validatedChatRef.current?.type === "private" &&
         validatedChatRef.current._id === data.chat_id &&
         data.user_id !== currentUserId
       ) {
-        console.log("👤 Setting typing for private chat:", data);
         setIsTyping(data.is_typing);
         setTypingUser(data.user_id);
 
@@ -1167,7 +1168,6 @@ export default function ChatWindow({
 
           // Auto-clear after 3 seconds
           typingTimeoutRef.current = setTimeout(() => {
-            console.log("⏰ Clearing typing indicator (timeout)");
             setIsTyping(false);
             setTypingUser(null);
           }, 3000);
@@ -1180,14 +1180,11 @@ export default function ChatWindow({
     };
 
     const handleTypingGroup = (data) => {
-      console.log("🔔 Group typing event received:", data);
-
       if (
         validatedChatRef.current?.type === "group" &&
         validatedChatRef.current._id === data.group_id &&
         data.user_id !== currentUserId
       ) {
-        console.log("👥 Setting typing for group:", data);
         setIsTyping(data.is_typing);
         setTypingUser(data.user_id);
 
@@ -1199,7 +1196,6 @@ export default function ChatWindow({
 
           // Auto-clear after 3 seconds
           typingTimeoutRef.current = setTimeout(() => {
-            console.log("⏰ Clearing group typing indicator (timeout)");
             setIsTyping(false);
             setTypingUser(null);
           }, 3000);
@@ -1217,8 +1213,6 @@ export default function ChatWindow({
 
     // Also update the typing event for backward compatibility:
     const handleTyping = (data) => {
-      console.log("🔔 Legacy typing event:", data);
-
       // Handle both private and group with fallback
       if (data.chat_id) {
         handleTypingPrivate(data);
@@ -1257,7 +1251,6 @@ export default function ChatWindow({
     // Debug: Log all socket events
     socket.onAny((event, data) => {
       if (event.includes("call")) {
-        console.log("🔍 Socket event:", event, data);
       }
       if (event.includes("accept") || event.includes("reject")) {
         ringtoneService.stop();
@@ -1332,7 +1325,7 @@ export default function ChatWindow({
         // Mark messages as read in the UI
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.sender_id === currentUserId &&
+            msg.sender_id?._id === currentUserId &&
             !msg.read_by?.includes(data.user_id)
               ? {
                   ...msg,
@@ -1351,7 +1344,7 @@ export default function ChatWindow({
       ) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.sender_id === currentUserId &&
+            msg.sender_id?._id === currentUserId &&
             !msg.read_by?.includes(data.user_id)
               ? {
                   ...msg,
@@ -1392,7 +1385,7 @@ export default function ChatWindow({
           setMessages((prev) =>
             prev.map((msg) =>
               data.message_ids.includes(msg._id) &&
-              msg.sender_id === currentUserId // Only update our own messages
+              msg.sender_id?._id === currentUserId // Only update our own messages
                 ? {
                     ...msg,
                     read_by: [...(msg.read_by || []), data.user_id],
@@ -1411,9 +1404,6 @@ export default function ChatWindow({
         validatedChatRef.current.type === "group" &&
         data.user_id !== currentUserId
       ) {
-        console.log(
-          `User ${data.user_id} read ${data.message_count} messages in this group`,
-        );
         // You could update UI here if needed
       }
     };
@@ -1513,13 +1503,13 @@ export default function ChatWindow({
 
       // Create the temp message for local state FIRST
       const tempMessage = {
-        id: tempId, // Use tempId as ID initially
+        _id: tempId, // Use tempId as ID initially
         tempId: tempId,
         message: JSON.stringify(codeData),
         message_type: "code",
         sender_id: currentUserId,
         sender: {
-          id: currentUserId,
+          _id: currentUserId,
           first_name: "You",
           last_name: "",
         },
@@ -1573,7 +1563,7 @@ export default function ChatWindow({
                   tempId: tempId, // Keep tempId for reference
                   sender: {
                     // Ensure sender info is preserved
-                    id: currentUserId,
+                    _id: currentUserId,
                     first_name: "You",
                     last_name: "",
                   },
@@ -1798,12 +1788,15 @@ export default function ChatWindow({
       }
 
       const apiResponse = response.data;
+
       const newMessages = apiResponse.messages || [];
 
       // Check if there are more messages to load
       if (!apiResponse.pagination?.hasMore || newMessages.length < 50) {
         setHasMoreMessages(false);
       }
+
+      messages.forEach((message) => {});
 
       // Process messages with language detection
       const processedMessages = await Promise.all(
@@ -1864,7 +1857,8 @@ export default function ChatWindow({
 
     const messageType = message.message_type || "text";
     const baseUrl =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000";
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "https://chat-apis.engineershut.com/";
 
     // Handle all file-based messages with consistent logic
     if (["image", "video", "file", "audio"].includes(messageType)) {
@@ -1883,7 +1877,7 @@ export default function ChatWindow({
 
       const transformed = {
         ...message,
-        id: message._id || message.message_id,
+        _id: message._id || message.message_id || message.id,
         message_type: messageType,
         file_url: finalFileUrl,
         message:
@@ -1913,7 +1907,7 @@ export default function ChatWindow({
     if (messageType === "rich_text" || messageType === "code") {
       return {
         ...message,
-        id: message._id || message.message_id,
+        _id: message._id || message.message_id || message.id,
         message_type: messageType,
         message: message.message || "",
         _transformed: true,
@@ -1926,7 +1920,7 @@ export default function ChatWindow({
     if (messageType === "call") {
       return {
         ...message,
-        id: message._id || message.message_id,
+        _id: message._id || message.message_id || message.id,
         message_type: "call",
         _transformed: true,
         timestamp:
@@ -1938,7 +1932,7 @@ export default function ChatWindow({
     if (message.is_deleted && message.message_type === "deleted") {
       return {
         ...message,
-        id: message._id || message.message_id,
+        _id: message._id || message.message_id || message.id,
         message_type: "deleted",
         message: "This message was deleted",
         file_url: null,
@@ -1952,7 +1946,7 @@ export default function ChatWindow({
     // Default text message
     return {
       ...message,
-      id: message._id || message.message_id,
+      _id: message._id || message.message_id || message.id,
       message_type: messageType,
       _transformed: true,
       timestamp:
@@ -1960,21 +1954,303 @@ export default function ChatWindow({
     };
   };
 
-  const sendMessage = async (e) => {
+  // const sendMessage = async (e) => {
+  //   e.preventDefault();
+
+  //   if (!isConnected || !validatedChatRef.current) return;
+
+  //   // Check if we have files to send
+  //   if (selectedFiles.length > 0) {
+  //     // Send files with caption (newMessage)
+  //     await sendFileMessages(selectedFiles, newMessage.trim());
+  //   } else if (newMessage?.trim()) {
+  //     // Send text message with mentions
+  //     await sendTextMessage(newMessage?.trim());
+  //   }
+  // };
+  // const sendMessage = async (e, translationData) => {
+  //   e.preventDefault();
+
+  //   if (!isConnected || !validatedChatRef.current) return;
+
+  //   const messageText = newMessage; // <-- YEH IMPORTANT LINE
+  //   const targetLanguage = translationData?.translateTo || translateTo;
+
+  //   // Agar kuch bhi nahi hai toh return
+  //   if (!messageText.trim() && selectedFiles.length === 0) {
+  //     return;
+  //   }
+
+  //   // Check moderation
+  //   const moderationResult = await checkMessageModeration(messageText);
+
+  //   if (moderationResult.should_block) {
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   if (moderationResult.flagged && !moderationResult.should_block) {
+  //     setPendingMessage({
+  //       text: messageText,
+  //       translateTo: targetLanguage,
+  //     });
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   // Check if we have files to send
+  //   if (selectedFiles.length > 0) {
+  //     await sendFileMessages(selectedFiles, messageText);
+  //   }
+  //   // Check if translation is needed
+  //   else if (targetLanguage && messageText.trim()) {
+  //     await proceedWithTranslatedSending(messageText, targetLanguage);
+  //   }
+  //   // Normal text message
+  //   else if (messageText.trim()) {
+  //     await proceedWithMessageSending(messageText);
+  //   }
+  // };
+  const sendMessage = async (e, translationData) => {
     e.preventDefault();
 
     if (!isConnected || !validatedChatRef.current) return;
 
-    // Check if we have files to send
+    const messageText = newMessage;
+    const targetLanguage = translationData?.translateTo || translateTo;
+
+    // Agar kuch bhi nahi hai toh return
+    if (!messageText.trim() && selectedFiles.length === 0) {
+      return;
+    }
+
+    // AGAR FILES HAIN TOH PEHLE FILES BHEJO
     if (selectedFiles.length > 0) {
-      // Send files with caption (newMessage)
-      await sendFileMessages(selectedFiles, newMessage.trim());
-    } else if (newMessage?.trim()) {
-      // Send text message with mentions
-      await sendTextMessage(newMessage?.trim());
+      await sendFileMessages(selectedFiles, messageText);
+      return;
+    }
+
+    // AGAR TEXT HAI TOH MODERATION CHECK KARO
+    if (messageText.trim()) {
+      // Check moderation
+      const moderationResult = await checkMessageModeration(messageText);
+
+      if (moderationResult.should_block) {
+        setModerationWarningData({
+          reasons: moderationResult.reasons,
+          warningLevel: moderationResult.warning_level,
+          messageContent: messageText,
+        });
+        setShowModerationWarning(true);
+        return;
+      }
+
+      if (moderationResult.flagged && !moderationResult.should_block) {
+        setPendingMessage({
+          text: messageText,
+          translateTo: targetLanguage,
+        });
+        setModerationWarningData({
+          reasons: moderationResult.reasons,
+          warningLevel: moderationResult.warning_level,
+          messageContent: messageText,
+        });
+        setShowModerationWarning(true);
+        return;
+      }
+
+      // MODERATION PASS - ACTUALLY SEND MESSAGE
+      if (targetLanguage) {
+        await proceedWithTranslatedSending(messageText, targetLanguage);
+      } else {
+        await proceedWithMessageSending(messageText);
+      }
     }
   };
+  // Add this new function for sending translated messages
+  // const sendTranslatedMessage = async (messageText, targetLanguage) => {
+  //   if (!currentUserId || !validatedChatRef.current) return;
 
+  //   // Check moderation on original text
+  //   const moderationResult = await checkMessageModeration(messageText);
+
+  //   if (moderationResult.should_block) {
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   if (moderationResult.flagged && !moderationResult.should_block) {
+  //     setPendingMessage({ text: messageText, translateTo: targetLanguage });
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   await proceedWithTranslatedSending(messageText, targetLanguage);
+  // };
+
+  // Update the proceedWithMessageSending function to handle translation
+  const proceedWithTranslatedSending = async (messageText, translateTo) => {
+    if (!currentUserId || !validatedChatRef.current) return;
+
+    setSending(true);
+
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Extract mentions from mentionedUsers state
+    const mentionIds = mentionedUsers.map((user) => user._id);
+    const mentionData = mentionedUsers.map((user) => ({
+      _id: user._id,
+      name: `${user.first_name} ${user.last_name || ""}`.trim(),
+      username: user.username || user.first_name,
+      profile_image: user.profile_image,
+    }));
+
+    // Clean the message text - remove the @ mentions
+    let cleanedMessage = messageText;
+    mentionedUsers.forEach((user) => {
+      const mentionPattern = new RegExp(`@${user.first_name}\\s?`, "g");
+      cleanedMessage = cleanedMessage.replace(mentionPattern, "");
+    });
+
+    // Trim extra spaces
+    cleanedMessage = cleanedMessage.trim();
+
+    const tempMessage = {
+      tempId: tempId,
+      message: cleanedMessage,
+      sender_id: currentUserId,
+      message_type: "text",
+      created_at: new Date().toISOString(),
+      isSending: true,
+      sender: {
+        _id: currentUserId,
+        first_name: "You",
+        last_name: "",
+      },
+      reply_to: replyToMessage
+        ? {
+            _id: replyToMessage._id,
+            message: replyToMessage.message,
+            message_type: replyToMessage.message_type,
+            sender_id: replyToMessage.sender_id?._id,
+            sender: replyToMessage.sender,
+          }
+        : null,
+      mentions: mentionIds,
+      mention_data: mentionData,
+      // Add translation metadata
+      translate_to: translateTo,
+      is_translated: true,
+      original_message: messageText,
+    };
+
+    if (validatedChatRef.current.type === "private") {
+      // setMessages((prev) => [...prev, tempMessage]);
+      setMessages((prev) => [...prev, tempMessage]);
+    }
+    // Add temp message immediately
+    setNewMessage("");
+    const currentReplyToMessage = replyToMessage;
+    setReplyToMessage(null);
+    setMentionedUsers([]);
+    setShowMentionSuggestions(false);
+    stopTyping();
+
+    try {
+      let response;
+
+      // Prepare message data with translation info
+      const messageData = {
+        message: messageText,
+        message_type: "text",
+        reply_to_message_id: currentReplyToMessage?._id,
+        // Translation metadata - direct fields, not nested
+        translate_to: translateTo,
+        is_translated: true,
+        original_message: messageText,
+        // Mentions
+        ...(mentionIds.length > 0 && {
+          mentions: mentionIds,
+          mention_data: mentionData,
+        }),
+      };
+
+      if (validatedChatRef.current.type === "private") {
+        response = await chatAPI.sendMessage(
+          validatedChatRef.current._id,
+          messageData,
+        );
+      } else {
+        response = await groupAPI.sendGroupMessage(
+          validatedChatRef.current._id,
+          {
+            ...messageData,
+            group_id: validatedChatRef.current._id,
+          },
+        );
+      }
+
+      const realMessage = {
+        ...response.data,
+        tempId: undefined,
+        reply_to: currentReplyToMessage
+          ? {
+              _id: currentReplyToMessage._id,
+              message: currentReplyToMessage.message,
+              message_type: currentReplyToMessage.message_type,
+              sender_id: currentReplyToMessage.sender_id?._id,
+              sender: currentReplyToMessage.sender,
+            }
+          : null,
+        // Preserve translation info
+        translate_to: translateTo,
+        is_translated: true,
+        original_message: messageText,
+      };
+
+      // Replace temp with real message
+      setMessages((prev) =>
+        prev.map((msg) => (msg.tempId === tempId ? realMessage : msg)),
+      );
+
+      // Clear translation state
+      setTranslateTo(null);
+
+      successToast("Message sent with translation", "success");
+    } catch (error) {
+      console.error("Error sending translated message:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.tempId === tempId
+            ? { ...msg, isSending: false, failed: true }
+            : msg,
+        ),
+      );
+      errorToast("Failed to send message", "error");
+    } finally {
+      setSending(false);
+    }
+  };
   const updateSidebarOnMessageSend = (message, chatType) => {
     if (!socket || !validatedChatRef.current) return;
 
@@ -1983,7 +2259,7 @@ export default function ChatWindow({
       last_message: message.message,
       last_message_type: message.message_type,
       last_message_at: message.created_at || new Date().toISOString(),
-      sender_id: message.sender_id,
+      sender_id: message.sender_id?._id,
       // Include file info for file messages
       ...(message.message_type !== "text" && {
         file_url: message.file_url,
@@ -2031,7 +2307,17 @@ export default function ChatWindow({
   // Handle moderation warning actions
   const handleModerationConfirm = () => {
     if (pendingMessage) {
-      proceedWithMessageSending(pendingMessage);
+      // Check if pendingMessage has translateTo property
+      if (pendingMessage.translateTo) {
+        // Translated message
+        proceedWithTranslatedSending(
+          pendingMessage.text,
+          pendingMessage.translateTo,
+        );
+      } else {
+        // Normal message
+        proceedWithMessageSending(pendingMessage.text || pendingMessage);
+      }
     }
     setShowModerationWarning(false);
     setPendingMessage(null);
@@ -2043,8 +2329,7 @@ export default function ChatWindow({
     setPendingMessage(null);
     setModerationWarningData(null);
   };
-
-  const sendTextMessage = async (messageText) => {
+  const sendTextMessage = async (messageText, translateTo = null) => {
     if (!currentUserId || !validatedChatRef.current) return;
 
     // Check moderation
@@ -2061,7 +2346,10 @@ export default function ChatWindow({
     }
 
     if (moderationResult.flagged && !moderationResult.should_block) {
-      setPendingMessage(messageText);
+      setPendingMessage({
+        text: messageText,
+        translateTo: translateTo,
+      });
       setModerationWarningData({
         reasons: moderationResult.reasons,
         warningLevel: moderationResult.warning_level,
@@ -2071,8 +2359,87 @@ export default function ChatWindow({
       return;
     }
 
-    await proceedWithMessageSending(messageText);
+    // MODERATION PASS - ACTUALLY SEND MESSAGE
+    if (translateTo) {
+      await proceedWithTranslatedSending(messageText, translateTo);
+    } else {
+      await proceedWithMessageSending(messageText);
+    }
   };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (
+      (!newMessage.trim() && selectedFiles.length === 0) ||
+      sending ||
+      !isConnected
+    )
+      return;
+
+    // Include translation info if set
+    if (translateTo && newMessage.trim()) {
+      onSendMessage(e, { translateTo });
+    } else {
+      onSendMessage(e);
+    }
+  };
+
+  const handleTranslateMessage = async (text, targetLanguage) => {
+    if (!text.trim() || !targetLanguage) return null;
+
+    try {
+      // const api =
+      //   validatedChatRef.current?.type === "group" ? groupAPI : chatAPI;
+      // console.log(text, "vvinod", targetLanguage);
+
+      // Call your translation API
+      const response = await aiAPI.translateMessage({
+        text: text,
+        targetLanguage: targetLanguage,
+      });
+      console.log(response, "response");
+
+      if (response.data.success) {
+        // Return the translated text for preview
+        return response.data.translation.translated || response.data.text;
+      }
+    } catch (error) {
+      console.error("Translation error:", error);
+      // Optional: Show error toast
+      // toast.error('Translation failed');
+    }
+
+    return null;
+  };
+
+  // const sendTextMessage = async (messageText) => {
+  //   if (!currentUserId || !validatedChatRef.current) return;
+
+  //   // Check moderation
+  //   const moderationResult = await checkMessageModeration(messageText);
+
+  //   if (moderationResult.should_block) {
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   if (moderationResult.flagged && !moderationResult.should_block) {
+  //     setPendingMessage(messageText);
+  //     setModerationWarningData({
+  //       reasons: moderationResult.reasons,
+  //       warningLevel: moderationResult.warning_level,
+  //       messageContent: messageText,
+  //     });
+  //     setShowModerationWarning(true);
+  //     return;
+  //   }
+
+  //   await proceedWithMessageSending(messageText);
+  // };
 
   const proceedWithMessageSending = async (messageText) => {
     if (!currentUserId || !validatedChatRef.current) return;
@@ -2084,7 +2451,7 @@ export default function ChatWindow({
     // Extract mentions from mentionedUsers state
     const mentionIds = mentionedUsers.map((user) => user._id);
     const mentionData = mentionedUsers.map((user) => ({
-      id: user._id,
+      _id: user._id,
       name: `${user.first_name} ${user.last_name || ""}`.trim(),
       username: user.username || user.first_name,
       profile_image: user.profile_image,
@@ -2109,17 +2476,23 @@ export default function ChatWindow({
       created_at: new Date().toISOString(),
       isSending: true,
       sender: {
-        id: currentUserId,
+        _id: currentUserId,
         first_name: "You",
         last_name: "",
       },
       reply_to: replyToMessage
         ? {
-            id: replyToMessage._id,
+            _id: replyToMessage._id,
             message: replyToMessage.message,
             message_type: replyToMessage.message_type,
-            sender_id: replyToMessage.sender_id,
-            sender: replyToMessage.sender,
+            sender_id:
+              replyToMessage.sender_id?._id || replyToMessage.sender_id,
+            sender: replyToMessage.sender || {
+              // ✅ Fallback sender object
+              _id: replyToMessage.sender_id?._id || replyToMessage.sender_id,
+              first_name: replyToMessage.sender?.first_name || "Unknown",
+              last_name: replyToMessage.sender?.last_name || "",
+            },
           }
         : null,
       mentions: mentionIds,
@@ -2127,7 +2500,9 @@ export default function ChatWindow({
     };
 
     // Add temp message immediately
-    setMessages((prev) => [...prev, tempMessage]);
+    if (validatedChatRef.current.type === "private") {
+      setMessages((prev) => [...prev, tempMessage]);
+    }
     setNewMessage("");
     const currentReplyToMessage = replyToMessage;
     setReplyToMessage(null);
@@ -2151,11 +2526,19 @@ export default function ChatWindow({
           tempId: undefined,
           reply_to: currentReplyToMessage
             ? {
-                id: currentReplyToMessage._id,
+                _id: currentReplyToMessage._id,
                 message: currentReplyToMessage.message,
                 message_type: currentReplyToMessage.message_type,
-                sender_id: currentReplyToMessage.sender_id,
-                sender: currentReplyToMessage.sender,
+                sender_id:
+                  response.data.sender_id?._id ||
+                  response.data.sender_id ||
+                  currentUserId,
+                sender: response.data.sender || {
+                  // ✅ Ensure sender object exists
+                  _id: currentUserId,
+                  first_name: "You",
+                  last_name: "",
+                },
               }
             : null,
         };
@@ -2209,7 +2592,7 @@ export default function ChatWindow({
         (id) => id !== undefined && id !== null && id !== "",
       );
 
-      return receiverId ? parseInt(receiverId) : null;
+      return receiverId ? receiverId : null;
     }
 
     // For groups, we don't have a single receiver
@@ -2250,7 +2633,7 @@ export default function ChatWindow({
       // Prepare mention data for temp message
       const mentionIds = mentionedUsers.map((user) => user._id);
       const mentionData = mentionedUsers.map((user) => ({
-        id: user._id,
+        _id: user._id,
         name: user.is_all_mention
           ? "@all"
           : `${user.first_name} ${user.last_name || ""}`.trim(),
@@ -2271,7 +2654,7 @@ export default function ChatWindow({
         created_at: new Date().toISOString(),
         isSending: true,
         sender: {
-          id: currentUserId,
+          _id: currentUserId,
           first_name: "You",
           last_name: "",
         },
@@ -2281,8 +2664,11 @@ export default function ChatWindow({
         caption: caption, // Store caption separately
       };
     });
+    if (validatedChatRef.current.type === "private") {
+      // setMessages((prev) => [...prev, tempMessage]);
+      setMessages((prev) => [...prev, ...tempMessages]);
+    }
 
-    setMessages((prev) => [...prev, ...tempMessages]);
     setReplyToMessage(null);
 
     try {
@@ -2470,10 +2856,6 @@ export default function ChatWindow({
 
       if (value.trim().length > 0) {
         // User started typing
-        console.log(
-          "✍️ User started typing in chat:",
-          validatedChatRef.current._id,
-        );
 
         if (validatedChatRef.current.type === "private" && receiverId) {
           socket.emit("typing_start", {
@@ -2497,12 +2879,9 @@ export default function ChatWindow({
 
         // Set timeout to stop typing indicator after 2 seconds of inactivity
         typingTimeoutRef.current = setTimeout(() => {
-          console.log("⏰ Stopping typing indicator");
           stopTyping();
         }, 2000);
       } else {
-        // Input is empty, stop typing immediately
-        console.log("🛑 Input empty, stopping typing");
         stopTyping();
       }
     }
@@ -2564,8 +2943,10 @@ export default function ChatWindow({
           break;
       }
     };
+    if (showMentionSuggestions) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
 
-    window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showMentionSuggestions, mentionSuggestions, selectedMentionIndex]);
 
@@ -2674,16 +3055,10 @@ export default function ChatWindow({
   };
 
   const stopTyping = () => {
-    console.log("🛑 Calling stopTyping function");
-
     if (socket && validatedChatRef.current && currentUserId) {
       const receiverId = getReceiverId();
 
       if (validatedChatRef.current.type === "private" && receiverId) {
-        console.log(
-          "✋ Stopping typing in private chat:",
-          validatedChatRef.current._id,
-        );
         socket.emit("typing_stop", {
           receiver_id: receiverId,
           chat_id: validatedChatRef.current._id,
@@ -2691,10 +3066,6 @@ export default function ChatWindow({
           is_typing: false,
         });
       } else if (validatedChatRef.current.type === "group") {
-        console.log(
-          "✋ Stopping typing in group:",
-          validatedChatRef.current._id,
-        );
         socket.emit("typing_stop_group", {
           group_id: validatedChatRef.current._id,
           user_id: currentUserId,
@@ -2779,9 +3150,10 @@ export default function ChatWindow({
   };
 
   const handleDeleteConfirmation = (message, deleteType) => {
+    setShowDeleteDialog(true);
     setSelectedMessage(message);
     setDeleteType(deleteType);
-    setShowDeleteDialog(true);
+    closeMessageMenu();
   };
 
   const handleDeleteMessage = async (message, deleteType) => {
@@ -3160,7 +3532,7 @@ export default function ChatWindow({
   // Message menu
   const closeMessageMenu = () => {
     setShowMessageMenu(null);
-    setSelectedMessage(null);
+    // setSelectedMessage(null);
 
     if (messageMenuClickOutsideRef.current) {
       document.removeEventListener("click", messageMenuClickOutsideRef.current);
@@ -3216,20 +3588,20 @@ export default function ChatWindow({
   };
 
   const renderMessageMenu = (message, position) => {
+
     if (showMessageMenu !== message._id) return null;
 
-    const isOwnMessage =
-      parseInt(message.sender_id) === parseInt(currentUserId);
+    const isOwnMessage = message.sender_id?._id === currentUserId;
     const isTextMessage = message.message_type === "text";
     const isDeletedMessage =
       message.is_deleted || message.message_type === "deleted";
 
     return (
       <div
-        className="fixed bg-white shadow-2xl rounded-lg border border-gray-200 z-[99999] min-w-48 overflow-hidden"
+        className="fixed  bg-white shadow-2xl rounded-lg border border-gray-200 z-[99999] min-w-48 overflow-hidden"
         style={{
           top: `${position.top}px`,
-          left: `${position.left}px`,
+          right: `${position.right}px`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -3569,650 +3941,6 @@ export default function ChatWindow({
       );
     }
   };
-
-  // Sticker functionality
-  const stickers = [
-    // Smileys & Emotion
-    "😀",
-    "😃",
-    "😄",
-    "😁",
-    "😆",
-    "😅",
-    "😂",
-    "🤣",
-    "😊",
-    "😇",
-    "🙂",
-    "🙃",
-    "😉",
-    "😌",
-    "😍",
-    "🥰",
-    "😘",
-    "😗",
-    "😙",
-    "😚",
-    "😋",
-    "😛",
-    "😝",
-    "😜",
-    "🤪",
-    "🤨",
-    "🧐",
-    "🤓",
-    "😎",
-    "🤩",
-    "🥳",
-    "😏",
-    "😒",
-    "😞",
-    "😔",
-    "😟",
-    "😕",
-    "🙁",
-    "☹️",
-    "😣",
-    "😖",
-    "😫",
-    "😩",
-    "🥺",
-    "😢",
-    "😭",
-    "😤",
-    "😠",
-    "😡",
-    "🤬",
-    "🤯",
-    "😳",
-    "🥵",
-    "🥶",
-    "😱",
-    "😨",
-    "😰",
-    "😥",
-    "😓",
-    "🤗",
-    "🤔",
-    "🤭",
-    "🤫",
-    "🤥",
-    "😶",
-    "😐",
-    "😑",
-    "😬",
-    "🙄",
-    "😯",
-    "😦",
-    "😧",
-    "😮",
-    "😲",
-    "🥱",
-    "😴",
-    "🤤",
-    "😪",
-    "😵",
-    "🤐",
-    "🥴",
-    "🤢",
-    "🤮",
-    "🤧",
-    "😷",
-    "🤒",
-    "🤕",
-    "🤑",
-    "🤠",
-    "😈",
-    "👿",
-    "👹",
-    "👺",
-    "🤡",
-    "💩",
-    "👻",
-    "💀",
-    "☠️",
-    "👽",
-    "👾",
-    "🤖",
-    "🎃",
-    "😺",
-    "😸",
-    "😹",
-    "😻",
-    "😼",
-    "😽",
-    "🙀",
-    "😿",
-    "😾",
-
-    // Hands & Body
-    "👋",
-    "🤚",
-    "🖐️",
-    "✋",
-    "🖖",
-    "👌",
-    "🤌",
-    "🤏",
-    "✌️",
-    "🤞",
-    "🤟",
-    "🤘",
-    "🤙",
-    "👈",
-    "👉",
-    "👆",
-    "🖕",
-    "👇",
-    "☝️",
-    "👍",
-    "👎",
-    "👊",
-    "✊",
-    "🤛",
-    "🤜",
-    "👏",
-    "🙌",
-    "👐",
-    "🤲",
-    "🤝",
-    "🙏",
-    "✍️",
-    "💅",
-    "🤳",
-    "💪",
-    "🦾",
-    "🦿",
-    "🦵",
-    "🦶",
-    "👂",
-    "🦻",
-    "👃",
-    "🧠",
-    "🦷",
-    "🦴",
-    "👀",
-    "👁️",
-    "👅",
-    "👄",
-    "💋",
-    "🩸",
-
-    // Hearts & Symbols
-    "❤️",
-    "🧡",
-    "💛",
-    "💚",
-    "💙",
-    "💜",
-    "🖤",
-    "🤍",
-    "🤎",
-    "💔",
-    "❤️‍🔥",
-    "❤️‍🩹",
-    "💕",
-    "💞",
-    "💓",
-    "💗",
-    "💖",
-    "💘",
-    "💝",
-    "💟",
-    "☮️",
-    "✝️",
-    "☪️",
-    "🕉️",
-    "☸️",
-    "✡️",
-    "🔯",
-    "🕎",
-    "☯️",
-    "☦️",
-    "🛐",
-    "⛎",
-    "♈",
-    "♉",
-    "♊",
-    "♋",
-    "♌",
-    "♍",
-    "♎",
-    "♏",
-    "♐",
-    "♑",
-    "♒",
-    "♓",
-    "🆔",
-    "⚛️",
-    "🉑",
-    "☢️",
-    "☣️",
-    "📴",
-    "📳",
-    "🈶",
-    "🈚",
-    "🈸",
-    "🈺",
-    "🈷️",
-    "✴️",
-    "🆚",
-    "💮",
-    "🉐",
-    "㊙️",
-    "㊗️",
-    "🈴",
-    "🈵",
-    "🈹",
-    "🈲",
-    "🅰️",
-    "🅱️",
-    "🆎",
-    "🆑",
-    "🅾️",
-    "🆘",
-    "",
-    "⭕",
-    "🛑",
-    "⛔",
-    "📛",
-    "🚫",
-    "💯",
-    "💢",
-    "♨️",
-    "🚷",
-    "🚯",
-    "🚳",
-    "🚱",
-    "🔞",
-    "📵",
-    "🚭",
-
-    // Animals & Nature
-    "🐶",
-    "🐺",
-    "🐱",
-    "🐭",
-    "🐹",
-    "🐰",
-    "🐸",
-    "🐯",
-    "🐨",
-    "🐻",
-    "🐷",
-    "🐽",
-    "🐮",
-    "🐗",
-    "🐵",
-    "🐒",
-    "🐴",
-    "🐑",
-    "🐘",
-    "🐼",
-    "🐧",
-    "🐦",
-    "🐤",
-    "🐥",
-    "🐣",
-    "🐔",
-    "🐍",
-    "🐢",
-    "🐛",
-    "🐝",
-    "🐜",
-    "🐞",
-    "🐌",
-    "🐙",
-    "🐚",
-    "🐠",
-    "🐟",
-    "🐬",
-    "🐳",
-    "🐎",
-    "🐲",
-    "🐡",
-    "🐫",
-    "🐩",
-    "🐾",
-    "💐",
-    "🌸",
-    "🌷",
-    "🍀",
-    "🌹",
-    "🌻",
-    "🌺",
-    "🍁",
-    "🍃",
-    "🍂",
-    "🌿",
-    "🌾",
-    "🍄",
-    "🌵",
-    "🌴",
-    "🌰",
-    "🌱",
-    "🌼",
-    "🌑",
-    "🌓",
-    "🌔",
-    "🌕",
-    "🌛",
-    "🌙",
-    "🌏",
-    "🌋",
-    "🌌",
-    "🌠",
-    "⛅",
-    "⛄",
-    "🌀",
-    "🌁",
-    "🌈",
-    "🌊",
-
-    // Food & Drink
-    "🍵",
-    "🍶",
-    "🍺",
-    "🍻",
-    "🍸",
-    "🍹",
-    "🍷",
-    "🍴",
-    "🍕",
-    "🍔",
-    "🍟",
-    "🍗",
-    "🍖",
-    "🍝",
-    "🍛",
-    "🍤",
-    "🍱",
-    "🍣",
-    "🍥",
-    "🍙",
-    "🍘",
-    "🍚",
-    "🍜",
-    "🍲",
-    "🍢",
-    "🍡",
-    "🍳",
-    "🍞",
-    "🍩",
-    "🍮",
-    "🍦",
-    "🍨",
-    "🍧",
-    "🎂",
-    "🍰",
-    "🍪",
-    "🍫",
-    "🍬",
-    "🍭",
-    "🍯",
-    "🍎",
-    "🍏",
-    "🍊",
-    "🍒",
-    "🍇",
-    "🍉",
-    "🍓",
-    "🍑",
-    "🍈",
-    "🍌",
-    "🍍",
-    "🍠",
-    "🍆",
-    "🍅",
-    "🌽",
-
-    // Objects
-    "🎍",
-    "🎎",
-    "🎒",
-    "🎓",
-    "🎏",
-    "🎆",
-    "🎇",
-    "🎐",
-    "🎑",
-    "🎃",
-    "🎄",
-    "🎁",
-    "🎋",
-    "🎉",
-    "🎊",
-    "🎈",
-    "🎌",
-    "🔮",
-    "🎥",
-    "📷",
-    "📹",
-    "📼",
-    "💿",
-    "📀",
-    "💽",
-    "💾",
-    "💻",
-    "📱",
-    "📞",
-    "📟",
-    "📠",
-    "📡",
-    "📺",
-    "📻",
-    "🔊",
-    "🔔",
-    "📢",
-    "📣",
-    "⏳",
-    "⌛",
-    "⏰",
-    "⌚",
-    "🔓",
-    "🔒",
-    "🔏",
-    "🔐",
-    "🔑",
-    "🔎",
-    "💡",
-    "🔦",
-    "🔌",
-    "🔋",
-    "🔍",
-    "🛀",
-    "🚽",
-    "🔧",
-    "🔩",
-    "🔨",
-    "🚪",
-    "🚬",
-    "💣",
-    "🔫",
-    "🔪",
-    "💊",
-    "💉",
-    "💰",
-    "💴",
-    "💵",
-    "💳",
-    "💸",
-    "📲",
-    "📧",
-    "📥",
-    "📤",
-    "📩",
-    "📨",
-    "📫",
-    "📪",
-    "📮",
-    "📦",
-    "📝",
-    "📄",
-    "📃",
-    "📑",
-    "📊",
-    "📈",
-    "📉",
-    "📜",
-    "📋",
-    "📅",
-    "📆",
-    "📇",
-    "📁",
-    "📂",
-    "📌",
-    "📎",
-    "📏",
-    "📐",
-    "📕",
-    "📗",
-    "📘",
-    "📙",
-    "📓",
-    "📔",
-    "📒",
-    "📚",
-    "📖",
-    "🔖",
-    "📰",
-    "🎨",
-    "🎬",
-    "🎤",
-    "🎧",
-    "🎼",
-    "🎵",
-    "🎶",
-    "🎹",
-    "🎻",
-    "🎺",
-    "🎷",
-    "🎸",
-    "👾",
-    "🎮",
-    "🃏",
-    "🎴",
-    "🀄",
-    "🎲",
-    "🎯",
-    "🏈",
-    "🏀",
-    "⚽",
-    "⚾",
-    "🎾",
-    "🎱",
-    "🎳",
-    "⛳",
-    "🏁",
-    "🏆",
-    "🎿",
-    "🏂",
-    "🏊",
-    "🏄",
-    "🎣",
-
-    // Travel & Places
-    "🏠",
-    "🏡",
-    "🏫",
-    "🏢",
-    "🏣",
-    "🏥",
-    "🏦",
-    "🏪",
-    "🏩",
-    "🏨",
-    "💒",
-    "⛪",
-    "🏬",
-    "🌇",
-    "🌆",
-    "🏯",
-    "🏰",
-    "⛺",
-    "🏭",
-    "🗼",
-    "🗾",
-    "🗻",
-    "🌄",
-    "🌅",
-    "🌃",
-    "🗽",
-    "🌉",
-    "🎠",
-    "🎡",
-    "⛲",
-    "🎢",
-    "🚢",
-    "⛵",
-    "🚤",
-    "🚀",
-    "💺",
-    "🚉",
-    "🚄",
-    "🚅",
-    "🚇",
-    "🚃",
-    "🚌",
-    "🚙",
-    "🚗",
-    "🚕",
-    "🚚",
-    "🚨",
-    "🚓",
-    "🚒",
-    "🚑",
-    "🚲",
-    "💈",
-    "🚏",
-    "🎫",
-    "🚥",
-    "🚧",
-    "🔰",
-    "⛽",
-    "🏮",
-    "🎰",
-    "🗿",
-    "🎪",
-    "🎭",
-    "📍",
-    "🚩",
-
-    // Geometry
-    "✔️",
-    "✖️",
-    "➕",
-    "➖",
-    "➗",
-    "💲",
-    "💱",
-    "©️",
-    "®️",
-    "™️",
-    "🔘",
-    "⚪",
-    "⚫",
-    "🔴",
-    "🔵",
-    "🔸",
-    "🔹",
-    "🔶",
-    "🔷",
-    "🔺",
-    "🔻",
-    "🔼",
-    "🔽",
-    "◾",
-    "◽",
-    "⬛",
-    "⬜",
-    "◼️",
-    "◻️",
-    "▪️",
-    "▫️",
-    "🔳",
-    "🔲",
-  ];
 
   const addStickerToMessage = (sticker) => {
     setNewMessage((prev) => prev + sticker);
@@ -4656,7 +4384,10 @@ export default function ChatWindow({
       };
 
       // Add temp audio message immediately
-      setMessages((prev) => [...prev, tempAudioMessage]);
+      if (validatedChatRef.current.type === "private") {
+        // setMessages((prev) => [...prev, tempMessage]);
+        setMessages((prev) => [...prev, tempAudioMessage]);
+      }
 
       if (validatedChatRef.current.type === "private") {
         response = await chatAPI.sendFileMessage(
@@ -4751,9 +4482,7 @@ export default function ChatWindow({
         audio.src = message.file_url;
         audio.preload = "metadata";
 
-        audio.onloadedmetadata = () => {
-          console.log("Audio preloaded:", message._id);
-        };
+        audio.onloadedmetadata = () => {};
       } catch (error) {
         console.error("Error preloading audio:", error);
       }
@@ -5064,6 +4793,10 @@ export default function ChatWindow({
         removeAllSelectedFiles={removeAllSelectedFiles}
         handleInputChange={handleInputChange}
         chatType={validatedChatRef.current?.type}
+        translateTo={translateTo}
+        onSetTranslateTo={setTranslateTo}
+        onTranslateMessage={handleTranslateMessage}
+        onClearTranslation={() => setTranslateTo(null)}
       />
 
       {/* Voice Recorder Dialog */}

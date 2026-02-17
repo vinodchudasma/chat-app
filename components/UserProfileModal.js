@@ -16,6 +16,8 @@ export default function UserProfileModal({
   chatData,
   onStartChat,
 }) {
+  console.log(userId, "111", chatData);
+
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -19,6 +19,7 @@ export default function AllConversations({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [chats, setChats] = useState([]);
+
   // Invitation states
   const [invitations, setInvitations] = useState([]);
 
@@ -377,11 +378,12 @@ export default function AllConversations({
 
     // ========== INVITATION HANDLERS  ==========
     const handleNewInvitation = (invitation) => {
+      console.log("🎁 New invitation received:", invitation);
       setInvitations((prev) => {
         const alreadyExists = prev.some(
           (inv) =>
             inv._id === invitation._id ||
-            (inv.from_user?._id === invitation.from_user?._id &&
+            (inv.user_id?._id === invitation.from_user?._id &&
               inv.user?._id === invitation.user?._id),
         );
 
@@ -393,7 +395,11 @@ export default function AllConversations({
       });
 
       successToast(
-        `New invitation from ${invitation.from_user?.username || invitation.from_user?.name || "someone"}`,
+        `New invitation from ${
+          invitation.user_id?.username ||
+          invitation.from_user?.name ||
+          "someone"
+        }`,
       );
     };
 
@@ -463,13 +469,11 @@ export default function AllConversations({
     };
 
     const handlePrivateMessage = (message) => {
-      console.log("📨 Private message received:", message);
-
       const chatId = message.chat_id;
+
       if (!chatId) return;
 
-      const isOwnMessage =
-        parseInt(message.sender_id) === parseInt(currentUserId);
+      const isOwnMessage = message.sender_id === currentUserId;
       const isSelected =
         selectedChat?.type === "private" &&
         selectedChat?._id === chatId.toString();
@@ -483,31 +487,16 @@ export default function AllConversations({
         `📊 Message type: ${message.message_type}, isFile: ${isFileMessage}, isOwn: ${isOwnMessage}, isSelected: ${isSelected}`,
       );
 
-      // Update last message preview for ALL message types including files
-      updateChatList(message, chatId);
+      // ✅ UPDATE MAIN conversations LIST (NOT just chats)
+      const shouldIncrementUnread = !isOwnMessage && !isSelected;
+      updateConversationList(message, chatId, "private", shouldIncrementUnread);
 
       // ⚠️ CRITICAL FIX: Only increment unread count locally if:
       // 1. Not our own message
       // 2. Chat is not currently selected
       // 3. Works for BOTH text and file messages
-      if (!isOwnMessage && !isSelected) {
+      if (shouldIncrementUnread) {
         console.log(`📈 Incrementing unread count for chat ${chatId}`);
-
-        setChats((prev) =>
-          prev.map((chat) =>
-            chat._id.toString() === chatId.toString()
-              ? {
-                  ...chat,
-                  unread_count: (chat.unread_count || 0) + 1,
-                  last_message: getMessagePreviewFromMessage(message),
-                  last_message_type: message.message_type,
-                  last_message_at:
-                    message.created_at || new Date().toISOString(),
-                  ...(message.file_name && { file_name: message.file_name }),
-                }
-              : chat,
-          ),
-        );
       } else {
         console.log(
           `⏭️ Skipping unread increment: isOwn=${isOwnMessage}, isSelected=${isSelected}`,
@@ -517,6 +506,7 @@ export default function AllConversations({
 
     // Handle group message
     const handleGroupMessage = (message) => {
+      console.log("👥 Group message received:", message);
       const groupId = message.group_id;
       if (!groupId) return;
 
@@ -535,6 +525,7 @@ export default function AllConversations({
 
     // Handle sidebar updates
     const handleUpdateSidebarChat = (data) => {
+      console.log("🔄 Sidebar update received:", data);
       updateConversationList(
         data,
         data.chat_id,
@@ -545,6 +536,7 @@ export default function AllConversations({
 
     // ========== ONLINE STATUS LISTENERS  ==========
     const handleUserStatusChange = (data) => {
+      console.log("👤 User status changed:", data);
       // Update the user online status
       setUserOnlineStatus((prev) => ({
         ...prev,
@@ -654,6 +646,7 @@ export default function AllConversations({
 
     // Handle chat unread count updates - USE THIS AS SINGLE SOURCE OF TRUTH
     const handleChatUnreadUpdated = (data) => {
+      console.log("📊 Chat unread updated:", data);
       if (data.user_id.toString() !== currentUserId.toString()) return;
 
       const updateKey = `chat-${data.chat_id}-${data.unread_count}`;
@@ -968,7 +961,7 @@ export default function AllConversations({
         const updatedConversations = [...prev];
         const convToUpdate = { ...updatedConversations[convIndex] };
 
-        // Update last message info (but not unread count here)
+        // Update last message info
         convToUpdate.last_message = message.message || message.last_message;
         convToUpdate.last_message_type =
           message.message_type || message.last_message_type;
@@ -977,8 +970,13 @@ export default function AllConversations({
           message.last_message_at ||
           new Date().toISOString();
 
-        // DO NOT increment unread count here - wait for server update
-        // The server will send chat_unread_updated or group_unread_updated event
+        // ✅ Increment unread count only if specified (for other users' messages when chat not selected)
+        if (shouldIncrementUnread) {
+          convToUpdate.unread_count = (convToUpdate.unread_count || 0) + 1;
+          console.log(
+            `✅ Updated unread count to ${convToUpdate.unread_count} for ${type} ${id}`,
+          );
+        }
 
         // Move to top
         updatedConversations.splice(convIndex, 1);
@@ -1006,7 +1004,10 @@ export default function AllConversations({
           message.last_message_at ||
           new Date().toISOString();
 
-        // DO NOT increment unread count here
+        // ✅ Also increment unread count in filtered list if needed
+        if (shouldIncrementUnread) {
+          convToUpdate.unread_count = (convToUpdate.unread_count || 0) + 1;
+        }
 
         updatedConversations.splice(convIndex, 1);
         updatedConversations.unshift(convToUpdate);
@@ -1120,6 +1121,7 @@ export default function AllConversations({
     };
 
     // Then in your socket.on setup:
+    console.log("📡 Setting up socket listeners...");
     socket.on("group_member_added", handleGroupMemberAdded);
     socket.on("group_member_removed", handleGroupMemberRemoved);
     socket.on("group_member_updated", handleGroupMemberUpdated);
@@ -1151,9 +1153,58 @@ export default function AllConversations({
     socket.on("group_invitation_sent", handleGroupInvitation);
     socket.on("group_deleted", handleGroupDeleted);
 
+    console.log("✅ All socket listeners registered successfully");
+    console.log(
+      "📊 Total listeners attached:",
+      [
+        "private_message",
+        "group_message",
+        "update_sidebar_chat",
+        "invitation_sent",
+        "invitation_accepted",
+        "invitation_rejected",
+        "chat_accepted",
+        "user_status_change",
+        "initial_status_sync",
+        "chat_unread_updated",
+        "group_unread_updated",
+        "chat_unread_reset",
+        "group_unread_reset",
+        "chat_removed",
+        "chat_cleared",
+        "group_invitation_sent",
+        "group_deleted",
+        "group_member_added",
+        "group_member_removed",
+        "group_member_updated",
+      ].length,
+    );
+
     // Request initial status sync
+    console.log(
+      "🔌 Socket setup complete. Socket connected:",
+      socket.connected,
+    );
+
     if (socket.connected) {
+      console.log("📡 Emitting request_initial_status");
       socket.emit("request_initial_status");
+    } else {
+      // Fallback: emit after small delay in case socket connects
+      const timer = setTimeout(() => {
+        if (socket.connected) {
+          console.log("📡 Emitting request_initial_status (delayed)");
+          socket.emit("request_initial_status");
+        }
+      }, 500);
+
+      // Also listen for connection event
+      socket.once("connect", () => {
+        console.log("📡 Socket connected! Emitting request_initial_status");
+        socket.emit("request_initial_status");
+      });
+
+      return () => clearTimeout(timer);
     }
 
     return () => {
@@ -1214,7 +1265,7 @@ export default function AllConversations({
       await loadInvitations();
       successToast("Invitation sent successfully!");
     } catch (error) {
-      setError(error.response?.data?.error || "Failed to send invitation");
+      setError(error.response?.data?.message || "Failed to send invitation");
     }
   };
 
@@ -1348,10 +1399,11 @@ export default function AllConversations({
     if (conversation.type === "private") {
       const isOnline = isUserOnline(conversation.other_user?._id);
       const statusInfo = getStatusInfo(conversation.other_user?._id);
+      console.log("conversation", conversation);
 
       onSelectChat({
         type: "private",
-        id: conversation._id,
+        _id: conversation._id,
         name: conversation.display_name,
         avatar: conversation.avatar,
         receiverId: conversation.other_user?._id,
@@ -1364,7 +1416,7 @@ export default function AllConversations({
     } else {
       onSelectChat({
         type: "group",
-        id: conversation._id,
+        _id: conversation._id,
         name: conversation.display_name,
         description: conversation.description,
         avatar: conversation.avatar || "/group-avatar.png",
@@ -1492,7 +1544,11 @@ export default function AllConversations({
     try {
       if (!selectedConversationForAction) return;
 
-      const { id, type } = selectedConversationForAction;
+      const { id: _id, type } = selectedConversationForAction;
+      console.log(
+        "selectedConversationForAction",
+        selectedConversationForAction,
+      );
 
       if (type === "private") {
         await chatAPI.deleteChat(_id);
@@ -1877,7 +1933,9 @@ export default function AllConversations({
           </div>
 
           {invitations.map((invitation) => {
-            const uniqueKey = `invite-${invitation._id}-${invitation.from_user?._id || invitation.user?._id}`;
+            const uniqueKey = `invite-${invitation._id}-${
+              invitation.user_id?._id || invitation.user?._id
+            }`;
 
             return (
               <div
@@ -1890,14 +1948,10 @@ export default function AllConversations({
                     <div className="relative flex-shrink-0">
                       <img
                         src={
-                          invitation.from_user?.profile_image ||
-                          invitation.user?.profile_image ||
+                          invitation.user_id?.profile_image ||
                           "/default-avatar.png"
                         }
-                        alt={
-                          invitation.from_user?.name ||
-                          invitation.user?.first_name
-                        }
+                        alt={invitation.user_id?.name}
                         className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
                       />
                       <div className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
@@ -1920,10 +1974,7 @@ export default function AllConversations({
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <p className="font-semibold text-gray-900 truncate">
-                          {invitation.from_user?.name ||
-                            `${invitation.user?.first_name} ${invitation.user?.last_name || ""}`.trim() ||
-                            invitation.user?.username ||
-                            "Unknown User"}
+                          {invitation.user_id?.username || "Unknown User"}
                         </p>
                         <span className="text-xs text-orange-600 bg-orange-100 px-2.5 py-1 rounded-full font-medium">
                           New
@@ -1931,9 +1982,7 @@ export default function AllConversations({
                       </div>
 
                       <p className="text-xs text-gray-500 truncate">
-                        {invitation.from_user?.email ||
-                          invitation.user?.email ||
-                          "No email"}
+                        {invitation.user_id?.email || "No email"}
                       </p>
 
                       <div className="flex items-center mt-2">
