@@ -14,6 +14,7 @@ export default function GroupProfileModal({
   socket,
 }) {
   const [groupDetails, setGroupDetails] = useState(null);
+
   const [members, setMembers] = useState([]);
   const [creator, setCreator] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ export default function GroupProfileModal({
 
       if (groupData) {
         setGroupDetails({
-          id: groupData?._id,
+          id: groupData?.id,
           name: groupData?.name,
           description: groupData?.description,
           created_by: groupData?.created_by,

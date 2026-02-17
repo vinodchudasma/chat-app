@@ -5,9 +5,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { chatAPI, groupAPI } from "../lib/api";
 import { successToast, errorToast } from "./toast";
 import LoadingSpinner from "./LoadingSpinner";
-import ChatHeader from "./chatWindow/ChatHeader";
-import MessageList from "./chatWindow/MessageList";
-import MessageInput from "./chatWindow/MessageInput";
 
 export default function PopupChat({
   chat,
@@ -150,10 +147,13 @@ export default function PopupChat({
 
       if (!isForThisChat) return;
 
-      if (parseInt(message.sender_id) === parseInt(currentUserId)) return;
+      if (message.sender_id === currentUserId) return;
 
       const transformedMessage = transformMessageForDisplay(message);
-      setMessages((prev) => [...prev, transformedMessage]);
+      if (validatedChatRef.current.type === "private") {
+        // setMessages((prev) => [...prev, tempMessage]);
+        setMessages((prev) => [...prev, transformedMessage]);
+      }
       setUnreadCount((prev) => prev + 1);
 
       // Auto-scroll to bottom
@@ -217,8 +217,11 @@ export default function PopupChat({
         last_name: "",
       },
     };
+    if (validatedChatRef.current.type === "private") {
+      // setMessages((prev) => [...prev, tempMessage]);
+      setMessages((prev) => [...prev, tempMessage]);
+    }
 
-    setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
 
     try {
@@ -565,11 +568,11 @@ export default function PopupChat({
             {messages.map((message) => (
               <div
                 key={message._id || message.tempId}
-                className={`flex ${parseInt(message.sender_id) === parseInt(currentUserId) ? "justify-end" : "justify-start"}`}
+                className={`flex ${message.sender_id._id === currentUserId ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[80%] rounded-xl p-2 ${
-                    parseInt(message.sender_id) === parseInt(currentUserId)
+                    message.sender_id._id === currentUserId
                       ? "bg-blue-100 text-blue-900 rounded-tr-none"
                       : "bg-gray-200 text-gray-900 rounded-tl-none"
                   } ${message.isSending ? "opacity-70" : ""} ${

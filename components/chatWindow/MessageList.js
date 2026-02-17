@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import LoadingSpinner from "../LoadingSpinner";
 import CodeSnippet from "../CodeSnippet";
-import { ToastElement, successToast, errorToast } from "../toast";
-import CallHistoryMessage from "../CallHistoryMessage";
-import { isCallMessage, parseCallMessage } from "../../utils/messageUtils";
+import { successToast } from "../toast";
 import AISuggestions from "./AISuggestions";
 import VoiceMessageWithTranscription from "./VoiceMessageWithTranscription";
 import MessageTranslation from "./MessageTranslation";
@@ -18,10 +16,7 @@ export default function MessageList({
   editText,
   searchQuery,
   wallpaper,
-  loadedImages,
-  showMessageMenu,
   menuPosition,
-  selectedMessage,
   onEditMessage,
   onSaveEdit,
   onCancelEdit,
@@ -64,10 +59,11 @@ export default function MessageList({
       : messages;
 
   // ========== EFFECT HOOKS ==========
+
   useEffect(() => {
     const context = messagesToDisplay.slice(-10).map((msg) => ({
       message: msg.message,
-      sender: msg.sender_id === currentUserId ? "user" : "other",
+      sender: msg.sender_id?._id === currentUserId ? "user" : "other",
       timestamp: msg.created_at,
     }));
     setChatContext(context);
@@ -483,6 +479,7 @@ export default function MessageList({
   // ========== MAIN RENDER FUNCTION ==========
   const renderMessage = (message, index) => {
     if (!message) return null;
+    // Is function ke top par ye console log daalo
 
     const generateUniqueKey = () => {
       if (message._id) {
@@ -581,8 +578,8 @@ export default function MessageList({
                 ([placeholder, mention]) => `
               <span class="mention-highlight clickable-mention bg-blue-100 text-blue-800 px-2 py-1 rounded font-medium mx-1 cursor-pointer hover:bg-blue-200 transition-colors" 
                     data-user-id="${mention._id}"
-                    data-user-name="${mention.name}">
-                @${mention.name}
+                    data-user-name="${mention.username}">
+                @${mention.username}
               </span>
             `,
               )
@@ -676,14 +673,14 @@ export default function MessageList({
           if (mention) {
             const mentionText = mention.is_all_mention
               ? "@all"
-              : `@${mention.name}`;
-            const mentionRegex = new RegExp(`@${mention.name}\\b`, "gi");
+              : `@${mention.username}`;
+            const mentionRegex = new RegExp(`@${mention.username}\\b`, "gi");
 
             processedText = processedText.replace(
               mentionRegex,
               `<span class="mention-highlight clickable-mention bg-blue-100 text-blue-800 px-1 py-0.5 rounded font-medium mx-1 cursor-pointer hover:bg-blue-200 transition-colors" 
                   data-user-id="${mention._id}"
-                  data-user-name="${mention.name}"
+                  data-user-name="${mention.username}"
                   data-is-all-mention="${mention.is_all_mention || false}">
             ${mentionText}
           </span>`,
@@ -697,89 +694,11 @@ export default function MessageList({
       return processedText;
     };
 
-    // const handleMentionClick = (e) => {
-    //   const mentionElement = e.target.closest('.clickable-mention');
-    //   if (mentionElement) {
-    //     e.preventDefault();
-    //     e.stopPropagation();
-
-    //     const userId = mentionElement.getAttribute('data-user-id');
-    //     const userName = mentionElement.getAttribute('data-user-name');
-    //     const isAllMention = mentionElement.getAttribute('data-is-all-mention') === 'true';
-
-    //     if (isAllMention) {
-    //       // Show notification for @all mention
-    //       successToast(`This message mentions everyone in the group`, 'info');
-    //     } else if (userId) {
-    //       // ========== EXISTING PROFILE OPENING LOGIC ==========
-
-    //       // Find the user in group members or chat participants
-    //       const user = groupMembers?.find(m => m.id == userId) ||
-    //         validatedChat?.participants?.find(p => p.id == userId);
-
-    //       if (user) {
-    //         // Open user profile modal
-    //         setSelectedUserForProfile({
-    //           userId: userId,
-    //           userName: userName,
-    //           userData: user
-    //         });
-    //         setShowUserProfile(true);
-    //       } else {
-    //         // Try to fetch user data if not available locally
-    //         handleOpenUserProfile(userId, userName);
-    //       }
-
-    //       // ========== END OF PROFILE OPENING LOGIC ==========
-    //     }
-    //   }
-    // };
-
-    const handleMentionClick = (e) => {
-      // Don't process mentions in private chats
-      if (validatedChat?.type === "private") {
-        return; // Early return for private chats
-      }
-
-      const mentionElement = e.target.closest(".clickable-mention");
-      if (mentionElement) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const userId = mentionElement.getAttribute("data-user-id");
-        const userName = mentionElement.getAttribute("data-user-name");
-        const isAllMention =
-          mentionElement.getAttribute("data-is-all-mention") === "true";
-
-        if (isAllMention) {
-          // Show notification for @all mention
-          successToast(`This message mentions everyone in the group`, "info");
-        } else if (userId) {
-          // Find the user in group members or chat participants
-          const user =
-            groupMembers?.find((m) => m._id == userId) ||
-            validatedChat?.participants?.find((p) => p._id == userId);
-
-          if (user) {
-            // Open user profile modal
-            setSelectedUserForProfile({
-              userId: userId,
-              userName: userName,
-              userData: user,
-            });
-            setShowUserProfile(true);
-          } else {
-            // Try to fetch user data if not available locally
-            handleOpenUserProfile(userId, userName);
-          }
-        }
-      }
-    };
-
     const uniqueKey = generateUniqueKey();
 
     const isOwnMessage =
-      parseInt(message.sender_id) === parseInt(currentUserId);
+      String(message.sender_id._id) === String(currentUserId);
+
     const isDeletedMessage =
       message.is_deleted == true &&
       message.message_type === "deleted" &&
@@ -809,8 +728,9 @@ export default function MessageList({
     // Check if this is the absolute last message in the entire chat
     const isLastMessage = message._id === lastMessageId;
 
-    const senderName = message.sender
-      ? `${message.sender.first_name || ""} ${message.sender.last_name || ""}`?.trim()
+    const senderName = message.sender_id
+      ? `${message.sender_id.first_name || ""} ${message.sender_id.last_name || ""}`?.trim() ||
+        message.sender_id.username
       : "Unknown User";
 
     // Parse code snippet data
@@ -972,10 +892,10 @@ export default function MessageList({
                         />
                       </svg>
                       <span>
-                        Replying to{" "}
-                        {message.reply_to.sender_id === currentUserId
-                          ? "yourself"
-                          : senderName}
+                        Replying to {message?.reply_to_user}
+                        {/* {message.reply_to.sender_id === currentUserId
+                          ? "you"
+                          : replayMessageSenderName} */}
                       </span>
                     </div>
                     <div className="text-sm truncate pl-5">
@@ -1433,10 +1353,9 @@ export default function MessageList({
                     />
                   </svg>
                   {/* Message menu */}
-                  {renderMessageMenu &&
-                    renderMessageMenu(message, menuPosition)}
                 </button>
               )}
+            {renderMessageMenu && renderMessageMenu(message, menuPosition)}
           </div>
         )}
         {!isOwnMessage && message.message_type === "text" && (
@@ -1477,7 +1396,7 @@ export default function MessageList({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto p-4 relative"
+      className="flex-1 overflow-y-auto p-4   relative"
       style={
         wallpaper
           ? {

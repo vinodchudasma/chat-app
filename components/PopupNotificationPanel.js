@@ -25,6 +25,7 @@ const PopupNotificationPanel = forwardRef(
     const [filter, setFilter] = useState("all");
     const [unreadCounts, setUnreadCounts] = useState({ chats: 0, groups: 0 });
     const [searchQuery, setSearchQuery] = useState("");
+    console.log(allChats, "allChats");
 
     // Menu states
     const [menuOpen, setMenuOpen] = useState(null);
@@ -121,6 +122,8 @@ const PopupNotificationPanel = forwardRef(
 
         // Load private chats with unread counts
         const chatsResponse = await chatAPI.getChats();
+        console.log("Raw chats API response:", chatsResponse.data);
+
         const privateChats = (chatsResponse.data || []).map((chat) => ({
           ...chat,
           type: "private",
@@ -140,6 +143,7 @@ const PopupNotificationPanel = forwardRef(
           last_message_at: group.last_message_at || group.created_at,
           unread_count: group.unread_count || 0,
           avatar: "/group-avatar.png",
+          member_count: group.member_count || 0,
         }));
 
         // Combine and sort by last message time
@@ -396,8 +400,9 @@ const PopupNotificationPanel = forwardRef(
             new Date().toISOString();
 
           // If it's a new message (not from current user), increment unread count
+          // const isOwnMessage = message.sender_id._id === currentUserId;
           const isOwnMessage =
-            parseInt(message.sender_id) === parseInt(currentUserId);
+            message.is_own_message || message.sender_id._id == currentUserId;
           if (isNewMessage && !isOwnMessage) {
             chatToUpdate.unread_count = (chatToUpdate.unread_count || 0) + 1;
 
@@ -499,8 +504,6 @@ const PopupNotificationPanel = forwardRef(
 
       // Handle private chat typing
       const handlePrivateTyping = (data) => {
-        console.log("🔔 Popup: Private typing event:", data);
-
         if (data.is_typing) {
           // User started typing
           setTypingUsers((prev) => ({
@@ -523,8 +526,6 @@ const PopupNotificationPanel = forwardRef(
 
       // Handle group chat typing
       const handleGroupTyping = (data) => {
-        console.log("🔔 Popup: Group typing event:", data);
-
         if (data.is_typing) {
           // User started typing
           setGroupTypingUsers((prev) => ({
@@ -547,8 +548,6 @@ const PopupNotificationPanel = forwardRef(
 
       // For backward compatibility
       const handleLegacyTyping = (data) => {
-        console.log("🔔 Popup: Legacy typing event:", data);
-
         if (data.chat_id) {
           // Assume it's private chat
           handlePrivateTyping(data);
@@ -706,10 +705,6 @@ const PopupNotificationPanel = forwardRef(
 
         if (value.trim().length > 0) {
           // User started typing
-          console.log(
-            "✍️ User started typing in chat:",
-            validatedChatRef.current._id,
-          );
 
           if (validatedChatRef.current.type === "private" && receiverId) {
             socket.emit("typing_start", {
@@ -745,8 +740,6 @@ const PopupNotificationPanel = forwardRef(
     };
 
     const stopTyping = () => {
-      console.log("🛑 Calling stopTyping function");
-
       if (socket && validatedChatRef.current && currentUserId) {
         const receiverId = getReceiverId();
 
@@ -961,7 +954,7 @@ const PopupNotificationPanel = forwardRef(
         successToast("Invitation sent successfully!");
       } catch (error) {
         setInviteError(
-          error.response?.data?.error || "Failed to send invitation",
+          error.response?.data?.message || "Failed to send invitation",
         );
       }
     };
@@ -1254,6 +1247,8 @@ const PopupNotificationPanel = forwardRef(
     };
 
     const filteredConversations = allChats.filter((chat) => {
+      console.log(chat, "chat");
+
       if (filter === "unread" && chat.unread_count === 0) return false;
       if (filter === "chats" && chat.type !== "private") return false;
       if (filter === "groups" && chat.type !== "group") return false;
@@ -1668,8 +1663,6 @@ const PopupNotificationPanel = forwardRef(
                     // Get typing info
                     const typingInfo = getTypingInfo(chat);
 
-                    console.log("typingInfo", typingInfo);
-
                     return (
                       <div
                         key={`${chat.type}-${chat._id}`}
@@ -1931,7 +1924,7 @@ const PopupNotificationPanel = forwardRef(
 
         {showGroupProfileModal && selectedGroupProfile && (
           <GroupProfileModal
-            groupId={selectedGroupProfile._id}
+            groupId={selectedGroupProfile.id}
             isOpen={showGroupProfileModal}
             onClose={() => {
               setShowGroupProfileModal(false);

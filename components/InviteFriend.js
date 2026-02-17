@@ -1,37 +1,37 @@
-import React, { useState } from 'react';
-import { chatAPI } from '../lib/api';
+import React, { useState } from "react";
+import { chatAPI } from "../lib/api";
 
 const InviteFriend = ({ onInviteSent }) => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
   const handleInvite = async (e) => {
     e.preventDefault();
-    
+
     if (!email) {
-      setMessage('Please enter an email address');
+      setMessage("Please enter an email address");
       return;
     }
 
     setLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const response = await chatAPI.sendInvitation(email);
-      
+
       if (response.data.success) {
         setMessage(`Invitation sent successfully to ${email}`);
-        setEmail('');
+        setEmail("");
         if (onInviteSent) {
           onInviteSent(response.data.friend);
         }
       } else {
-        setMessage('Failed to send invitation');
+        setMessage("Failed to send invitation");
       }
     } catch (error) {
-      console.error('Invitation error:', error);
-      setMessage(error.response?.data?.error || 'Failed to send invitation');
+      console.error("Invitation error:", error);
+      setMessage(error.response?.data?.message || "Failed to send invitation");
     } finally {
       setLoading(false);
     }
@@ -51,20 +51,22 @@ const InviteFriend = ({ onInviteSent }) => {
             className="email-input"
           />
         </div>
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={loading || !email}
           className="invite-button cursor-pointer"
         >
-          {loading ? 'Sending...' : 'Send Invitation'}
+          {loading ? "Sending..." : "Send Invitation"}
         </button>
       </form>
       {message && (
-        <div className={`message ${message.includes('successfully') ? 'success' : 'error'}`}>
+        <div
+          className={`message ${message.includes("successfully") ? "success" : "error"}`}
+        >
           {message}
         </div>
       )}
-      
+
       <style jsx>{`
         .invite-friend {
           padding: 20px;
@@ -73,22 +75,22 @@ const InviteFriend = ({ onInviteSent }) => {
           margin-bottom: 20px;
           background: white;
         }
-        
+
         .invite-friend h3 {
           margin: 0 0 15px 0;
           color: #333;
         }
-        
+
         .invite-form {
           display: flex;
           gap: 10px;
           align-items: flex-end;
         }
-        
+
         .form-group {
           flex: 1;
         }
-        
+
         .email-input {
           width: 100%;
           padding: 10px;
@@ -96,7 +98,7 @@ const InviteFriend = ({ onInviteSent }) => {
           border-radius: 4px;
           font-size: 14px;
         }
-        
+
         .invite-button {
           padding: 10px 20px;
           background: #007bff;
@@ -106,29 +108,29 @@ const InviteFriend = ({ onInviteSent }) => {
           cursor: pointer;
           font-size: 14px;
         }
-        
+
         .invite-button:disabled {
           background: #6c757d;
           cursor: not-allowed;
         }
-        
+
         .invite-button:hover:not(:disabled) {
           background: #0056b3;
         }
-        
+
         .message {
           margin-top: 10px;
           padding: 8px 12px;
           border-radius: 4px;
           font-size: 14px;
         }
-        
+
         .message.success {
           background: #d4edda;
           color: #155724;
           border: 1px solid #c3e6cb;
         }
-        
+
         .message.error {
           background: #f8d7da;
           color: #721c24;

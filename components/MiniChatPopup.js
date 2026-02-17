@@ -22,6 +22,7 @@ export default function MiniChatPopup({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [popupPosition, setPopupPosition] = useState(position);
   const [unreadCount, setUnreadCount] = useState(0);
+  console.log(chat, "chat3");
 
   const messagesEndRef = useRef(null);
   const popupRef = useRef(null);

@@ -70,10 +70,25 @@ export default function ChatDashboard() {
   // Open mini chat - Maximum 3 popups, FIFO (First In First Out)
   const openMiniChat = (chat) => {
     setMiniChats((prev) => {
+      // Normalize the chat object to ensure it has _id
+      const normalizedChat = {
+        ...chat,
+        _id: chat._id || chat.id, // Ensure _id exists
+        type: chat.type || "private",
+        display_name: chat.display_name || chat.userName || "Unknown Chat",
+        ...(chat.type === "group" && {
+          member_count: chat.member_count || 0,
+          description: chat.description || "",
+          is_public: chat.is_public || false,
+          created_by: chat.created_by,
+        }),
+      };
+
       // Check if already open
       const existingIndex = prev.findIndex(
-        (c) => c._id === chat._id && c.type === chat.type,
+        (c) => c._id === normalizedChat._id && c.type === normalizedChat.type,
       );
+
       if (existingIndex !== -1) {
         console.log("Chat already open - bringing to front");
         // Move existing chat to end (rightmost position)
@@ -103,7 +118,7 @@ export default function ChatDashboard() {
       }
 
       // Add new chat at the END (rightmost position)
-      updatedChats.push(chat);
+      updatedChats.push(normalizedChat);
 
       // Calculate positions for all chats
       return updatedChats.map((c, idx) => ({
@@ -116,7 +131,6 @@ export default function ChatDashboard() {
       }));
     });
   };
-
   // Recalculate positions when panel state changes
   useEffect(() => {
     if (miniChats.length === 0) return;
@@ -150,13 +164,15 @@ export default function ChatDashboard() {
 
   // Open in main window (your existing function)
   const openInMainWindow = (chat) => {
-    console.log("Opening in main window:", chat);
     // Your existing logic to open chat in main area
   };
 
   // Open in new tab
   const handleOpenInNewTab = (chat) => {
-    const url = `/chat/${chat.type}/${chat._id}`;
+    const chatId = chat._id || chat.id;
+    const chatType = chat.type;
+
+    const url = `/chat/${chatType}/${chatId}`;
     window.open(url, "_blank");
   };
 
@@ -1022,7 +1038,7 @@ export default function ChatDashboard() {
             <button
               className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer relative ${
                 activeTab === "all"
-                  ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
+                  ? "text-gray-600 border-b-2 border-primary-600 bg-primary-50"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => handleTabChange("all")}
@@ -1039,7 +1055,7 @@ export default function ChatDashboard() {
             <button
               className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer relative ${
                 activeTab === "chats"
-                  ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
+                  ? "text-gray-600 border-b-2 border-primary-600 bg-primary-50"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => handleTabChange("chats")}
@@ -1055,7 +1071,7 @@ export default function ChatDashboard() {
             <button
               className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer relative ${
                 activeTab === "groups"
-                  ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
+                  ? "text-gray-600 border-b-2 border-primary-600 bg-primary-50"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => handleTabChange("groups")}
@@ -1070,7 +1086,7 @@ export default function ChatDashboard() {
             <button
               className={`flex-1 py-3 text-sm font-medium transition-colors cursor-pointer relative ${
                 activeTab === "call-history"
-                  ? "text-primary-600 border-b-2 border-primary-600 bg-primary-50"
+                  ? "text-gray-600 border-b-2 border-primary-600 bg-primary-50"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
               onClick={() => handleTabChange("call-history")}
@@ -1203,22 +1219,24 @@ export default function ChatDashboard() {
       />
 
       {/* Mini Chat Windows - Higher z-index than panel */}
-      {miniChats.map((chat, index) => (
-        <ChatWindowPopup
-          key={`${chat.type}-${chat._id}`}
-          chat={chat}
-          socket={socket}
-          isConnected={true}
-          currentUserId={currentUserId}
-          onClose={() => closeMiniChat(chat._id, chat.type)}
-          onOpenInMainWindow={(chat) => {
-            openInMainWindow(chat);
-            closeMiniChat(chat._id, chat.type);
-          }}
-          position={chat.position}
-          zIndex={1500 + index}
-        />
-      ))}
+      {miniChats.map((chat, index) => {
+        return (
+          <ChatWindowPopup
+            key={`${chat.type}-${chat._id}`}
+            chat={chat}
+            socket={socket}
+            isConnected={true}
+            currentUserId={currentUserId}
+            onClose={() => closeMiniChat(chat._id, chat.type)}
+            onOpenInMainWindow={(chat) => {
+              openInMainWindow(chat);
+              closeMiniChat(chat._id, chat.type);
+            }}
+            position={chat.position}
+            zIndex={1500 + index}
+          />
+        );
+      })}
     </div>
   );
 }

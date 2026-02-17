@@ -36,8 +36,14 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Add these styles to your CSS */
@@ -97,7 +103,7 @@ mark {
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-size: 0.875rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   color: #1f2937;
 }
 
@@ -125,9 +131,15 @@ mark {
 }
 
 @keyframes highlightPulse {
-  0% { background-color: rgba(255, 255, 0, 0.3); }
-  50% { background-color: rgba(255, 255, 0, 0.6); }
-  100% { background-color: rgba(255, 255, 0, 0.3); }
+  0% {
+    background-color: rgba(255, 255, 0, 0.3);
+  }
+  50% {
+    background-color: rgba(255, 255, 0, 0.6);
+  }
+  100% {
+    background-color: rgba(255, 255, 0, 0.3);
+  }
 }
 
 /* Ensure proper z-index for modals */
@@ -135,23 +147,19 @@ mark {
   z-index: 9999;
 }
 
-
-.items-start.gray .fixed{
-    position: absolute;
-    content: "";
-    top: 0px !important;
-    left: 30px !important;
+.items-start.gray .fixed {
+  position: absolute;
+  content: "";
+  top: 0px !important;
+  left: 30px !important;
 }
 
-
-.items-start.blue .fixed{
-    /* position: absolute; */
-    content: "";
-    top: 0px !important;
-    right: 50px !important;
+.items-start.blue .fixed {
+  /* position: absolute; */
+  content: "";
+  top: 0px !important;
+  right: 50px !important;
 }
-  
-
 
 .rich-text-preview {
   line-height: 1.5;
@@ -182,7 +190,7 @@ mark {
   border-radius: 0.25rem;
   font-size: 0.875rem;
   color: #dc2626;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 }
 
 .rich-text-preview a {
@@ -194,7 +202,6 @@ mark {
 .rich-text-preview a:hover {
   color: #1d4ed8;
 }
-
 
 .z-\[9999\] {
   z-index: 9999 !important;
@@ -221,22 +228,25 @@ mark {
   background-color: #f3f4f6;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
   font-size: 0.875rem;
   color: #1f2937;
 }
 
 /* Animation for recording */
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-
-
 
 /* Add this to your global CSS or as a style tag */
 .rich-text-link {
@@ -292,7 +302,8 @@ mark {
 
 /* Pulse animation for loading */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -396,7 +407,9 @@ button {
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 5px 10px rgba(0, 0, 0, 0.05);
   min-width: 180px;
   max-width: 220px;
   animation: menuSlideIn 0.15s ease-out;
@@ -529,21 +542,36 @@ body.menu-open {
   overflow-anchor: none;
 }
 
-
 /* Voice Call Animations */
 @keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.8; }
-  100% { transform: scale(1.1); opacity: 0; }
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes sound-wave {
-  0%, 100% { height: 0.5rem; }
-  50% { height: 1.5rem; }
+  0%,
+  100% {
+    height: 0.5rem;
+  }
+  50% {
+    height: 1.5rem;
+  }
 }
 
 .animate-pulse-ring {
@@ -572,14 +600,14 @@ body.menu-open {
 }
 
 .gradient-border::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: 1rem;
   padding: 2px;
   background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -602,7 +630,7 @@ body.menu-open {
 }
 
 .status-indicator::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   top: 50%;
@@ -614,39 +642,75 @@ body.menu-open {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.status-connected::before { background-color: #10b981; }
-.status-connecting::before { background-color: #f59e0b; }
-.status-disconnected::before { background-color: #ef4444; }
-
+.status-connected::before {
+  background-color: #10b981;
+}
+.status-connecting::before {
+  background-color: #f59e0b;
+}
+.status-disconnected::before {
+  background-color: #ef4444;
+}
 
 /* Video Call Specific Animations */
 @keyframes video-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 @keyframes connection-wave {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes status-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @keyframes button-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
-  50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.8); }
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+  }
 }
 
 @keyframes quality-bar {
-  0%, 100% { height: 0.25rem; }
-  50% { height: 1rem; }
+  0%,
+  100% {
+    height: 0.25rem;
+  }
+  50% {
+    height: 1rem;
+  }
 }
 
 /* Component Styles */
@@ -698,13 +762,15 @@ body.menu-open {
 }
 
 .video-container::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(45deg, 
-    rgba(59, 130, 246, 0.1) 0%, 
-    rgba(139, 92, 246, 0.1) 50%, 
-    rgba(236, 72, 153, 0.1) 100%);
+  background: linear-gradient(
+    45deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(139, 92, 246, 0.1) 50%,
+    rgba(236, 72, 153, 0.1) 100%
+  );
   z-index: 1;
   pointer-events: none;
 }
@@ -717,7 +783,7 @@ body.menu-open {
 }
 
 .call-button::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 50%;
@@ -751,7 +817,7 @@ body.menu-open {
 }
 
 .status-indicator-video::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 8px;
   height: 8px;
@@ -765,12 +831,12 @@ body.menu-open {
   .video-controls {
     padding: 1rem;
   }
-  
+
   .video-controls button {
     width: 3.5rem;
     height: 3.5rem;
   }
-  
+
   .video-preview {
     height: 12rem;
   }
@@ -793,16 +859,28 @@ body.menu-open {
   animation: loading-wave-animation 1s ease-in-out infinite;
 }
 
-.loading-wave span:nth-child(2) { animation-delay: 0.1s; }
-.loading-wave span:nth-child(3) { animation-delay: 0.2s; }
-.loading-wave span:nth-child(4) { animation-delay: 0.3s; }
-.loading-wave span:nth-child(5) { animation-delay: 0.4s; }
-
-@keyframes loading-wave-animation {
-  0%, 100% { height: 1rem; }
-  50% { height: 2.5rem; }
+.loading-wave span:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.loading-wave span:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.loading-wave span:nth-child(4) {
+  animation-delay: 0.3s;
+}
+.loading-wave span:nth-child(5) {
+  animation-delay: 0.4s;
 }
 
+@keyframes loading-wave-animation {
+  0%,
+  100% {
+    height: 1rem;
+  }
+  50% {
+    height: 2.5rem;
+  }
+}
 
 /* Prevent closing edit popup when clicking inside */
 .edit-message-ui {
@@ -836,8 +914,14 @@ body.menu-open {
 
 /* Popup Chat Window Styles */
 .mini-chat-popup {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, width 0.2s ease, height 0.2s ease;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    width 0.2s ease,
+    height 0.2s ease;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
   border-radius: 12px;
   overflow: hidden;
   resize: none;
@@ -845,7 +929,9 @@ body.menu-open {
 }
 
 .mini-chat-popup:hover {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .mini-chat-popup.dragging {
@@ -973,8 +1059,12 @@ body.menu-open {
 }
 
 @keyframes highlightPulse {
-  0% { background-color: rgba(255, 255, 0, 0.3); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: rgba(255, 255, 0, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 /* Responsive popup */
@@ -1062,7 +1152,9 @@ body.menu-open {
 }
 
 @keyframes typingBounce {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
   }
   30% {
@@ -1096,11 +1188,11 @@ body.menu-open {
 }
 
 @keyframes typing {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.4;
   }
   50% {
     opacity: 1;
   }
 }
-
